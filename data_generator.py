@@ -3,14 +3,25 @@ from random import choice, randint
 import json, dataclasses,time
 from dataclasses import dataclass
 
+# base data
 concurrency = ["CNY", "USD", "JPY", "EUR"]
 commodity = ["1", "2", "3", "4"]
 users = [1, 2, 3, 4, 5, 6, 7]
 
+# generator config
+
+'''
+MAX_ITEM is the max number of specific items in one order
+MAX_PURCHASE is max kinds of items user could buy(same kind exist)
+GENERATE_STRIDE is the maximum number of orders in one iteration,
+    do not change it unless memory run out
+'''
 MAX_ITEM = 5
 MAX_PURCHASE = 5
-GENERATE_STRIDE = 2 ** 10
-
+GENERATE_STRIDE = 2 ** 20
+'''
+Item class and factory class
+'''
 @dataclass
 class Item:
     id: str
@@ -24,6 +35,10 @@ class ItemFactory:
     @staticmethod
     def create_random_list(num):
         return [ItemFactory.create_random() for i in range(num)]
+
+'''
+Record class and factory class
+'''
 
 @dataclass
 class Record:
@@ -44,6 +59,12 @@ class RecordFactory:
     def create_random_list(num):
         return [RecordFactory.create_random() for i in range(num)]
 
+'''
+Generator class
+It includes JSONEncoder which could encode dataclasses.
+It will generate a file contain a number of line of json object which is an order.
+
+'''
 class Generator:
     class EnhancedJSONEncoder(json.JSONEncoder):
         def default(self, o):

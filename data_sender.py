@@ -3,14 +3,16 @@ from multiprocessing.pool import Pool
 from multiprocessing.context import TimeoutError
 import time
 
-
+# config 
 MAX_PROCESS = 5
 URL = "http://localhost:8080"
 
-cnt = 0
+'''
+Sender will send the content of file line by line to URL
+'''
 class Sender:
-    def __init__(self, url, file, proc):
-        self.url = url
+    url : str
+    def __init__(self, file, proc = MAX_PROCESS):
         self.file = file
         self.pool = Pool(processes=proc)
     
@@ -25,8 +27,6 @@ class Sender:
     
 
 if __name__ == "__main__":
-    s = Sender(URL, "test-1.data", MAX_PROCESS)
+    s = Sender("test-1.data", MAX_PROCESS)
+    # print(s.url)
     s.run()
-    # r = requests.post(URL, json="{}", headers={'Connection':'close'})
-    # time.sleep(1)
-    # print(r)
