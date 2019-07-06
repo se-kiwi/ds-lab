@@ -1,5 +1,7 @@
 package com.kiwi.dslab.zookeeper;
 
+import java.util.List;
+
 public class ZkDaoImpl implements ZkDao {
     @Override
     public boolean increaseTotalTransactionBy(double amount) {
@@ -9,6 +11,11 @@ public class ZkDaoImpl implements ZkDao {
     @Override
     public double getTotalTransactionAmount() {
         return 0;
+    }
+
+    @Override
+    public List<Double> getAllExchangeRate() {
+        return null;
     }
 
     @Override

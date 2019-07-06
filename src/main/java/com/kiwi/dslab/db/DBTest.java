@@ -2,9 +2,7 @@ package com.kiwi.dslab.db;
 
 import com.kiwi.dslab.dto.db.Item;
 import com.kiwi.dslab.dto.db.OrderForm;
-import com.kiwi.dslab.dto.db.OrderResponse;
 
-import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,24 +14,24 @@ public class DBTest {
 //    public static final String PASSWD = "root";
 
     public static void main(String[] args) {
-        try {
-            Class.forName("com.mysql.jdbc.Driver");
-        } catch (ClassNotFoundException e) {
-            System.out.println("Couldn't find JDBC driver!");
-            e.printStackTrace();
-            return;
-        }
+//        try {
+//            Class.forName("com.mysql.jdbc.Driver");
+//        } catch (ClassNotFoundException e) {
+//            System.out.println("Couldn't find JDBC driver!");
+//            e.printStackTrace();
+//            return;
+//        }
 
         MysqlDao dao = new MysqlDaoImpl();
-//        OrderResponse response = dao.getResultById("1");
+//        ResultResponse response = dao.getResultById("1");
 //        if (response == null) {
 //            System.out.println("null object!");
 //        } else {
 //            response.print();
 //        }
 //
-//        List<OrderResponse> rs = dao.getResultByUserId("2");
-//        for (OrderResponse r : rs) {
+//        List<ResultResponse> rs = dao.getResultByUserId("2");
+//        for (ResultResponse r : rs) {
 //            r.print();
 //        }
         OrderForm form = new OrderForm();

@@ -3,6 +3,7 @@ package com.kiwi.dslab.db;
 import com.kiwi.dslab.dto.db.Item;
 import com.kiwi.dslab.dto.db.OrderForm;
 import com.kiwi.dslab.dto.db.OrderResponse;
+import com.kiwi.dslab.dto.db.ResultResponse;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -16,17 +17,33 @@ public class MysqlDaoImpl implements MysqlDao {
     private static final String USER = "root";
     private static final String PASSWD = "root";
 
+    public MysqlDaoImpl() {
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+        } catch (ClassNotFoundException e) {
+            System.out.println("Couldn't find JDBC driver!");
+            e.printStackTrace();
+        }
+    }
+
     @Override
-    public boolean buyItem(OrderForm order) {
+    public OrderResponse buyItem(OrderForm order) {
+        OrderResponse response = new OrderResponse(false, null, null);
+        List<Double> prices = new ArrayList<>();
+        List<String> currencies = new ArrayList<>();
         try {
             Connection connection = getConnection();
             for (Item item : order.getItems()) {
-                PreparedStatement ps = connection.prepareStatement("SELECT inventory FROM commodity WHERE id = ?");
+                PreparedStatement ps = connection.prepareStatement("SELECT * FROM commodity WHERE id = ?");
                 ps.setInt(1, Integer.valueOf(item.getId()));
                 ResultSet rs = ps.executeQuery();
-                if (rs.next() && rs.getInt("inventory") < Integer.valueOf(item.getNumber())) {
-                    connection.close();
-                    return false;
+                if (rs.next()) {
+                    prices.add(rs.getDouble("price"));
+                    currencies.add(rs.getString("currency"));
+                    if (rs.getInt("inventory") < Integer.valueOf(item.getNumber())) {
+                        connection.close();
+                        return response;
+                    }
                 }
             }
             for (Item item : order.getItems()) {
@@ -39,17 +56,25 @@ public class MysqlDaoImpl implements MysqlDao {
             connection.close();
         } catch (SQLException e) {
             e.printStackTrace();
-            return false;
+            return response;
         }
-        return true;
+        response.setSuccess(true);
+        response.setCurrencies(currencies);
+        response.setPrices(prices);
+        return response;
     }
 
     @Override
-    public boolean storeResult(String id, String user_id, String initiator, boolean success, double paid) {
+    public boolean storeResult(String user_id, String initiator, boolean success, double paid) {
         try {
             Connection connection = getConnection();
-            connection.prepareStatement("INSERT result values (id, user_id, initiator, success, paid) ")
-                    .executeUpdate();
+            PreparedStatement preparedStatement
+                    = connection.prepareStatement("INSERT result (user_id, initiator, success, paid) VALUES (?, ?, ?, ?)");
+            preparedStatement.setInt(1, Integer.valueOf(user_id));
+            preparedStatement.setString(2, initiator);
+            preparedStatement.setBoolean(3, success);
+            preparedStatement.setDouble(4, paid);
+            preparedStatement.executeUpdate();
             connection.close();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -59,8 +84,8 @@ public class MysqlDaoImpl implements MysqlDao {
     }
 
     @Override
-    public OrderResponse getResultById(String id) {
-        OrderResponse response = null;
+    public ResultResponse getResultById(String id) {
+        ResultResponse response = null;
 
         try {
             Connection connection = getConnection();
@@ -69,7 +94,7 @@ public class MysqlDaoImpl implements MysqlDao {
             ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
-                response = new OrderResponse();
+                response = new ResultResponse();
                 response.setOrder_id(rs.getString("id"));
                 response.setUser_id(rs.getString("user_id"));
                 response.setInitiator(rs.getString("initiator"));
@@ -85,8 +110,8 @@ public class MysqlDaoImpl implements MysqlDao {
     }
 
     @Override
-    public List<OrderResponse> getResultByUserId(String userId) {
-        List<OrderResponse> response = new ArrayList<>();
+    public List<ResultResponse> getResultByUserId(String userId) {
+        List<ResultResponse> response = new ArrayList<>();
 
         try {
             Connection connection = getConnection();
@@ -95,7 +120,7 @@ public class MysqlDaoImpl implements MysqlDao {
             ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
-                OrderResponse or = new OrderResponse();
+                ResultResponse or = new ResultResponse();
                 or.setOrder_id(rs.getString("id"));
                 or.setUser_id(rs.getString("user_id"));
                 or.setInitiator(rs.getString("initiator"));

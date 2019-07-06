@@ -1,34 +1,16 @@
 package com.kiwi.dslab.dto.db;
 
+import java.util.List;
+
 public class OrderResponse {
-    private String order_id;
-    private String user_id;
-    private String initiator;
     private boolean success;
-    private double paid;
+    private List<Double> prices;
+    private List<String> currencies;
 
-    public String getOrder_id() {
-        return order_id;
-    }
-
-    public void setOrder_id(String order_id) {
-        this.order_id = order_id;
-    }
-
-    public String getUser_id() {
-        return user_id;
-    }
-
-    public void setUser_id(String user_id) {
-        this.user_id = user_id;
-    }
-
-    public String getInitiator() {
-        return initiator;
-    }
-
-    public void setInitiator(String initiator) {
-        this.initiator = initiator;
+    public OrderResponse(boolean success, List<Double> prices, List<String> currencies) {
+        this.success = success;
+        this.prices = prices;
+        this.currencies = currencies;
     }
 
     public boolean isSuccess() {
@@ -39,15 +21,19 @@ public class OrderResponse {
         this.success = success;
     }
 
-    public double getPaid() {
-        return paid;
+    public List<Double> getPrices() {
+        return prices;
     }
 
-    public void setPaid(double paid) {
-        this.paid = paid;
+    public void setPrices(List<Double> prices) {
+        this.prices = prices;
     }
 
-    public void print() {
-        System.out.println(order_id + ", " + user_id + ", " + initiator + ", " + success + ", " + paid);
+    public List<String> getCurrencies() {
+        return currencies;
+    }
+
+    public void setCurrencies(List<String> currencies) {
+        this.currencies = currencies;
     }
 }
