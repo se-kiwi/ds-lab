@@ -11,4 +11,6 @@ public interface MysqlDao {
     boolean storeResult(String user_id, String initiator, boolean success, double paid);
     ResultResponse getResultById(String id);
     List<ResultResponse> getResultByUserId(String userId);
+
+    boolean initCommodity();
 }

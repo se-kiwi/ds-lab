@@ -22,14 +22,10 @@ import scala.Tuple2;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static com.kiwi.dslab.util.Utils.name2index;
+
 public class MainProcess {
-    private static final Map<String, Integer> name2index = new ConcurrentHashMap<>();
-    static  {
-        name2index.put("CNY", 0);
-        name2index.put("USD", 1);
-        name2index.put("JPY", 2);
-        name2index.put("EUR", 3);
-    };
+
 
     public static void main(String[] args) {
 

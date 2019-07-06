@@ -9,6 +9,9 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.kiwi.dslab.util.Utils.index2name;
+import static com.kiwi.dslab.util.Utils.getRandInt;
+
 // TODO: acquire lock before access `commodity`
 // TODO: update total transaction in zookeeper
 
@@ -134,6 +137,48 @@ public class MysqlDaoImpl implements MysqlDao {
             return null;
         }
         return response;
+    }
+
+    @Override
+    public boolean initCommodity() {
+        try {
+            Connection connection = getConnection();
+            // drop table commodity
+            PreparedStatement ps =
+                    connection.prepareStatement("DROP TABLE commodity");
+            ps.executeUpdate();
+
+            // create new table `commodity`
+            ps = connection.prepareStatement("create table commodity\n" +
+                    "(\n" +
+                    "    id int primary key auto_increment,\n" +
+                    "    name varchar(18) not null,\n" +
+                    "    price double not null,\n" +
+                    "    currency varchar(8) not null,\n" +
+                    "    inventory int not null\n" +
+                    ")");
+            ps.executeUpdate();
+
+            for (int i = 0; i < 500; i++) {
+                int randInt = getRandInt();
+                String name = "item" + i;
+                double price = randInt % 10000 / 100.0;
+                String currency = index2name.get(randInt % 4);
+                int inventory = getRandInt() % 500;
+
+                ps = connection.prepareStatement("INSERT commodity (name, price, currency, inventory) VALUES (?, ?, ?, ?)");
+                ps.setString(1, name);
+                ps.setDouble(2, price);
+                ps.setString(3, currency);
+                ps.setInt(4, inventory);
+                ps.executeUpdate();
+            }
+            connection.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
     }
 
     private Connection getConnection() throws SQLException {
