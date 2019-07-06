@@ -1,6 +1,7 @@
 import requests
 from multiprocessing.pool import Pool
 from multiprocessing.context import TimeoutError
+import time
 
 
 MAX_PROCESS = 5
@@ -15,9 +16,7 @@ class Sender:
     
     @staticmethod
     def send(content):
-        r = requests.post(URL, json=content)
-        print("complete\n")
-        return r
+        return requests.post(URL, json=content, headers={'Connection':'close'})
     
     def run(self):
         with open(self.file, "r") as f:
@@ -27,6 +26,7 @@ class Sender:
 
 if __name__ == "__main__":
     s = Sender(URL, "test-1.data", MAX_PROCESS)
-    # s.run()
-    r = requests.post(URL, json="{}")
-    print(r)
+    s.run()
+    # r = requests.post(URL, json="{}", headers={'Connection':'close'})
+    # time.sleep(1)
+    # print(r)
