@@ -29,3 +29,6 @@ HELP.md
 .vscode/
 
 log/
+
+### generated data
+test-*.json
