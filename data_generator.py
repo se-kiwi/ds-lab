@@ -2,9 +2,9 @@ from random import choice, seed, randint
 import json, dataclasses,time
 from dataclasses import dataclass
 
-concurrency = ["RMB", "USD", "JPY", "EUR"]
+concurrency = ["CNY", "USD", "JPY", "EUR"]
 commodity = ["1", "2", "3", "4"]
-users = ["u1", "u2", "u3", "u4", "u5", "u6", "u7"]
+users = [1, 2, 3, 4, 5, 6, 7]
 seed()
 
 MAX_ITEM = 5
