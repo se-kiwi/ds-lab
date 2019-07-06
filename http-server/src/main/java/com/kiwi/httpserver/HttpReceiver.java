@@ -1,7 +1,5 @@
-package com.kiwi.dslab.httpserver;
+package com.kiwi.httpserver;
 
-import com.kiwi.dslab.Config;
-import com.kiwi.dslab.KafkaProperties;
 import fi.iki.elonen.NanoHTTPD;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
