@@ -31,4 +31,4 @@ HELP.md
 log/
 
 ### generated data
-test-*.json
+test-*.data
