@@ -3,7 +3,6 @@ package com.kiwi.dslab;
 import com.google.gson.Gson;
 import com.kiwi.dslab.db.MysqlDao;
 import com.kiwi.dslab.db.MysqlDaoImpl;
-import com.kiwi.dslab.dto.db.Item;
 import com.kiwi.dslab.dto.db.OrderForm;
 import com.kiwi.dslab.dto.db.OrderResponse;
 import com.kiwi.dslab.zookeeper.ZkDao;
@@ -17,10 +16,8 @@ import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka010.ConsumerStrategies;
 import org.apache.spark.streaming.kafka010.KafkaUtils;
 import org.apache.spark.streaming.kafka010.LocationStrategies;
-import scala.Tuple2;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static com.kiwi.dslab.util.Utils.name2index;
 
