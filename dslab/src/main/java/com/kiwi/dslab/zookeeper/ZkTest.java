@@ -20,7 +20,7 @@ public class ZkTest {
         });
         connectedSignal.await();
 
-//        zk.create("/kiwi", null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+//        zk.create("/test000", null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 //
 //        zk.create("/kiwi/CNY", "0".getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 //        zk.create("/kiwi/USD", "0".getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
@@ -31,17 +31,19 @@ public class ZkTest {
 
 //        zk.setData("/kiwi/CNY", "0.4".getBytes(), -1);
 
+//        zk.setData("/test000", "0".getBytes(), -1);
+
         List<String> zooChildren = zk.getChildren("/kiwi", false);
         System.out.println(zooChildren);
 
         Stat stat = new Stat();
 //        System.out.println(new String(zk.getData("/brokers/topics/yfzm/partitions/0/state", false, stat)));
-        System.out.println(new String(zk.getData("/kiwi/txAmount", false, stat)));
+        System.out.println(new String(zk.getData("/test000", false, stat)));
         System.out.println(stat.getVersion());
 
-        zk.setData("/kiwi/txAmount", "3.55".getBytes(), stat.getVersion());
-        System.out.println(new String(zk.getData("/kiwi/txAmount", false, stat)));
-        System.out.println(stat.getVersion());
+//        zk.setData("/kiwi/txAmount", "3.55".getBytes(), stat.getVersion());
+//        System.out.println(new String(zk.getData("/kiwi/txAmount", false, stat)));
+//        System.out.println(stat.getVersion());
 
 //        for (String child : zooChildren) {
 //            System.out.println(child);

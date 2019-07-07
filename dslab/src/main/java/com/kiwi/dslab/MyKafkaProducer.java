@@ -24,19 +24,22 @@ public class MyKafkaProducer extends Thread {
     @Override
     public void run() {
         try {
-            int messageNo = 1;
-            while (true) {
-                String messageStr = "Hello, this is No. " + messageNo + " data.";
-                producer.send(new ProducerRecord<String, String>(topic, "Message", messageStr));
-                if (messageNo % 100 == 0) {
-                    System.out.println("Sent: " + messageStr);
-                }
-                if (messageNo % 1000 == 0) {
-                    System.out.println("Sent " + messageStr + " msgs");
-                    break;
-                }
-                messageNo++;
+            for (int i = 0; i < 10; i++) {
+                producer.send(new ProducerRecord<>("test000", String.valueOf(i/10.0)));
             }
+//            int messageNo = 1;
+//            while (true) {
+//                String messageStr = "Hello, this is No. " + messageNo + " data.";
+//                producer.send(new ProducerRecord<String, String>(topic, "Message", messageStr));
+//                if (messageNo % 100 == 0) {
+//                    System.out.println("Sent: " + messageStr);
+//                }
+//                if (messageNo % 1000 == 0) {
+//                    System.out.println("Sent " + messageStr + " msgs");
+//                    break;
+//                }
+//                messageNo++;
+//            }
         } catch (Exception e) {
             e.printStackTrace();
         } finally {

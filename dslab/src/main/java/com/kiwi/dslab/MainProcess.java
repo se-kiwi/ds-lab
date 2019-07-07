@@ -42,11 +42,12 @@ public class MainProcess {
         kafkaParams.put("key.deserializer", StringDeserializer.class);
         kafkaParams.put("value.deserializer", StringDeserializer.class);
         kafkaParams.put("group.id", KafkaProperties.GROUP_ID);
-        kafkaParams.put("auto.offset.reset", "latest");
+//        kafkaParams.put("auto.offset.reset", "latest");
+        kafkaParams.put("auto.offset.reset", "earliest");
         kafkaParams.put("enable.auto.commit", false);
 
 //        Collection<String> topics = Arrays.asList(KafkaProperties.TOPIC);
-        Collection<String> topics = Arrays.asList("yfzm");
+        Collection<String> topics = Arrays.asList("test");
 
         JavaInputDStream<ConsumerRecord<String, String>> stream =
                 KafkaUtils.createDirectStream(
@@ -57,28 +58,29 @@ public class MainProcess {
 
         stream.foreachRDD(record -> {
             record.foreach(r -> {
-//                System.out.println(r.value());
-                OrderForm form = gson.fromJson(r.value(), OrderForm.class);
-
-                OrderResponse response = mysqlDao.buyItem(form);
-
-                if (!response.isSuccess()) {
-                    mysqlDao.storeResult(form.getUser_id(), form.getInitiator(), false, 0);
-                    return;
-                }
-
-                List<Double> exchangeRates = zkDao.getAllExchangeRate();
-                double paidInUnit = 0;
-                for (int i = 0; i < form.getItems().size(); i++) {
-                    paidInUnit += Integer.valueOf(form.getItems().get(i).getNumber())
-                            * response.getPrices().get(i)
-                            * exchangeRates.get(name2index.get(response.getCurrencies().get(i)));
-                }
-
-                double paidInCNY = paidInUnit / name2index.get("CNY");
-                mysqlDao.storeResult(form.getUser_id(), form.getInitiator(), true,
-                        paidInUnit / name2index.get(form.getInitiator()));
-                zkDao.increaseTotalTransactionBy(paidInCNY);
+                System.out.println("Key:   " + r.key());
+                System.out.println("Value: " + r.value());
+//                OrderForm form = gson.fromJson(r.value(), OrderForm.class);
+//
+//                OrderResponse response = mysqlDao.buyItem(form);
+//
+//                if (!response.isSuccess()) {
+//                    mysqlDao.storeResult(form.getUser_id(), form.getInitiator(), false, 0);
+//                    return;
+//                }
+//
+//                List<Double> exchangeRates = zkDao.getAllExchangeRate();
+//                double paidInUnit = 0;
+//                for (int i = 0; i < form.getItems().size(); i++) {
+//                    paidInUnit += Integer.valueOf(form.getItems().get(i).getNumber())
+//                            * response.getPrices().get(i)
+//                            * exchangeRates.get(name2index.get(response.getCurrencies().get(i)));
+//                }
+//
+//                double paidInCNY = paidInUnit / name2index.get("CNY");
+//                mysqlDao.storeResult(form.getUser_id(), form.getInitiator(), true,
+//                        paidInUnit / name2index.get(form.getInitiator()));
+//                zkDao.increaseTotalTransactionBy(paidInCNY);
             });
         });
 
