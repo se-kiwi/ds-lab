@@ -6,7 +6,8 @@ from dataclasses import dataclass
 # base data
 concurrency = ["CNY", "USD", "JPY", "EUR"]
 commodity = ["1", "2", "3", "4"]
-users = [1, 2, 3, 4, 5, 6, 7]
+users = ["1", "2", "3", "4", "5", "6", "7"]
+# users = [1, 2, 3, 4, 5, 6, 7]
 
 # generator config
 
@@ -25,12 +26,12 @@ Item class and factory class
 @dataclass
 class Item:
     id: str
-    number: int
+    number: str
 
 class ItemFactory:
     @staticmethod
     def create_random():
-        return Item(choice(commodity), randint(1, MAX_ITEM))
+        return Item(choice(commodity), str(randint(1, MAX_ITEM)))
 
     @staticmethod
     def create_random_list(num):
@@ -67,6 +68,7 @@ It will generate a file contain a number of line of json object which is an orde
 '''
 class Generator:
     class EnhancedJSONEncoder(json.JSONEncoder):
+        # @override
         def default(self, o):
             if dataclasses.is_dataclass(o):
                 return dataclasses.asdict(o)
