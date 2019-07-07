@@ -1,4 +1,4 @@
-package com.kiwi.httpserver;
+package com.kiwi.httpserver.config;
 
 public final class KafkaProperties {
     public static final String ZK="localhost:2181";      //Zookeeper地址

@@ -5,7 +5,7 @@ import time
 
 # config 
 MAX_PROCESS = 5
-URL = "http://localhost:8080"
+URL = "http://localhost:8080/"
 
 '''
 Sender will send the content of file line by line to URL

@@ -3,7 +3,6 @@ package com.kiwi.dslab;
 import com.kiwi.dslab.zookeeper.ZkDaoImpl;
 
 import java.util.Date;
-import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
