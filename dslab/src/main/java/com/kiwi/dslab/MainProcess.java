@@ -22,13 +22,9 @@ import java.util.*;
 import static com.kiwi.dslab.util.Utils.name2index;
 
 public class MainProcess {
-
+    private static final Gson gson = new Gson();
 
     public static void main(String[] args) {
-
-
-
-
         SparkConf conf = new SparkConf().setAppName("spark-streaming").setMaster("local[*]");
         JavaStreamingContext streamingContext = new JavaStreamingContext(conf, Durations.seconds(1));
 
@@ -42,7 +38,7 @@ public class MainProcess {
         kafkaParams.put("enable.auto.commit", false);
 
 //        Collection<String> topics = Arrays.asList(KafkaProperties.TOPIC);
-        Collection<String> topics = Arrays.asList("test005");
+        Collection<String> topics = Arrays.asList("test006");
 
         JavaInputDStream<ConsumerRecord<String, String>> stream =
                 KafkaUtils.createDirectStream(
@@ -55,7 +51,6 @@ public class MainProcess {
             record.foreach(r -> {
                 System.out.println("Key:   " + r.key());
                 System.out.println("Value: " + r.value());
-                Gson gson = new Gson();
                 MysqlDao mysqlDao = new MysqlDaoImpl();
                 ZkDao zkDao = new ZkDaoImpl();
                 OrderForm form = gson.fromJson(r.value(), OrderForm.class);
