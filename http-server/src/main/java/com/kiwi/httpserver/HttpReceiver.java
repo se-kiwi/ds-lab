@@ -40,24 +40,27 @@ public class HttpReceiver extends NanoHTTPD {
     public Response serve(IHTTPSession session) {
         Method method = session.getMethod();
         String uri = session.getUri();
+        System.out.println(uri + ", " + method);
         if (method == Method.POST && uri.equals("/")) {
             try {
                 byte[] buf;
                 InputStream stream = session.getInputStream();
                 buf = new byte[stream.available()];
 //            assert stream.read(buf) == 0;
-                if (stream.read(buf) != 0) {
-                    throw new IOException();
-                }
-//            System.out.println(new String((buf)));
+//                if (stream.read(buf) == 0) {
+//                    throw new IOException();
+//                }
+                stream.read(buf);
+                System.out.println(new String((buf)));
                 producer.send(new ProducerRecord<String, String>(topic, "Message", new String(buf)));
             } catch (IOException e) {
+                e.printStackTrace();
                 return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "wrong");
             }
             return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "wrong");
-        }else if (method == Method.GET && uri.equals("/amount")){
+        } else if (method == Method.GET && uri.equals("/amount")) {
             return newFixedLengthResponse(dao.getTotalTransactionAmount().toString());
-        }else{
+        } else {
             return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "wrong");
         }
     }
