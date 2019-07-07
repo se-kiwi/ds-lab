@@ -37,7 +37,11 @@ public class HttpReceiver extends NanoHTTPD {
             byte[] buf;
             InputStream stream = session.getInputStream();
             buf = new byte[stream.available()];
-            assert stream.read(buf) == 0;
+//            assert stream.read(buf) == 0;
+            if (stream.read(buf) != 0){
+                throw new IOException();
+            }
+//            System.out.println(new String((buf)));
             producer.send(new ProducerRecord<String, String>(topic, "Message", new String(buf)));
         } catch (IOException e) {
             return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "wrong");
