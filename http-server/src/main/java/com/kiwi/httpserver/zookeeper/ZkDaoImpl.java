@@ -8,7 +8,7 @@ import org.apache.zookeeper.data.Stat;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 
-import static com.kiwi.httpserver.config.ZooKeeperPath.ZK_PATH_TXAMOUNT;
+import static com.kiwi.httpserver.config.ZooKeeperConfig.*;
 
 public class ZkDaoImpl implements ZkDao {
 
@@ -17,7 +17,7 @@ public class ZkDaoImpl implements ZkDao {
     public ZkDaoImpl() {
         try {
             final CountDownLatch connectedSignal = new CountDownLatch(1);
-            zk = new ZooKeeper("localhost:2181", 5000, event -> {
+            zk = new ZooKeeper(ZK_HOST_PORT, ZK_TIMEOUT, event -> {
                 if (event.getState() == Watcher.Event.KeeperState.SyncConnected) {
                     connectedSignal.countDown();
                 }
