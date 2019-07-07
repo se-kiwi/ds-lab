@@ -1,7 +1,10 @@
 package com.kiwi.httpserver;
 
+import com.google.gson.Gson;
 import com.kiwi.httpserver.config.Config;
 import com.kiwi.httpserver.config.KafkaProperties;
+import com.kiwi.httpserver.mysql.MysqlDao;
+import com.kiwi.httpserver.mysql.MysqlDaoImpl;
 import com.kiwi.httpserver.zookeeper.ZkDao;
 import com.kiwi.httpserver.zookeeper.ZkDaoImpl;
 import fi.iki.elonen.NanoHTTPD;
@@ -11,12 +14,15 @@ import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
 import java.util.Properties;
 
 public class HttpReceiver extends NanoHTTPD {
     private String topic;
     private KafkaProducer<String, String> producer;
-    private ZkDao dao = new ZkDaoImpl();
+    private ZkDao zkDao = new ZkDaoImpl();
+    private MysqlDao mysqlDao = new MysqlDaoImpl();
+    private Gson gson = new Gson();
 
     private void initProducer() {
         this.topic = KafkaProperties.TOPIC;
@@ -40,6 +46,7 @@ public class HttpReceiver extends NanoHTTPD {
     public Response serve(IHTTPSession session) {
         Method method = session.getMethod();
         String uri = session.getUri();
+        Map<String, String> parms = session.getParms();
         if (method == Method.POST && uri.equals("/")) {
             try {
                 byte[] buf;
@@ -55,9 +62,24 @@ public class HttpReceiver extends NanoHTTPD {
                 return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "wrong");
             }
             return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "wrong");
-        }else if (method == Method.GET && uri.equals("/amount")){
-            return newFixedLengthResponse(dao.getTotalTransactionAmount().toString());
-        }else{
+        } else if (method == Method.GET) {
+            switch (uri) {
+                case "/amount":
+                    return newFixedLengthResponse(zkDao.getTotalTransactionAmount().toString());
+                case "/querybyid":
+                    if (!parms.containsKey("id")) {
+                        return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "must have id");
+                    }
+                    return newFixedLengthResponse(gson.toJson(mysqlDao.getResultById(parms.get("id"))));
+                case "/querybyuserid":
+                    if (!parms.containsKey("userid")) {
+                        return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "must have user id");
+                    }
+                    return newFixedLengthResponse(gson.toJson(mysqlDao.getResultByUserId(parms.get("userid"))));
+                default:
+                    return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "wrong");
+            }
+        } else {
             return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "wrong");
         }
     }
