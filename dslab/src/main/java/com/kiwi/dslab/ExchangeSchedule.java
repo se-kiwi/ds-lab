@@ -11,10 +11,10 @@ import java.util.concurrent.TimeUnit;
 public class ExchangeSchedule {
 //    private static ZkDaoImpl zDao = new ZkDaoImpl();
 
-    private static Runnable RMBRunner = () -> {
-        System.out.println("RMB round:" + new Date());
+    private static Runnable CNYRunner = () -> {
+        System.out.println("CNY round:" + new Date());
         ZkDaoImpl zDao = new ZkDaoImpl();
-        zDao.changeExchangeRateRandomly("RMB");
+        zDao.changeExchangeRateRandomly("CNY");
         zDao.close();
     };
     private static Runnable USDRunner = () -> {
@@ -40,7 +40,7 @@ public class ExchangeSchedule {
 
     public static void main(String[] args) {
         ScheduledExecutorService scheduledExecutorService =  Executors.newScheduledThreadPool(5);
-        scheduledExecutorService.scheduleWithFixedDelay(RMBRunner,5,60,TimeUnit.SECONDS);
+        scheduledExecutorService.scheduleWithFixedDelay(CNYRunner,5,60,TimeUnit.SECONDS);
         scheduledExecutorService.scheduleWithFixedDelay(USDRunner,5, 60, TimeUnit.SECONDS);
         scheduledExecutorService.scheduleWithFixedDelay(JPYRunner,5, 60, TimeUnit.SECONDS);
         scheduledExecutorService.scheduleWithFixedDelay(EURRunner,5, 60, TimeUnit.SECONDS);
