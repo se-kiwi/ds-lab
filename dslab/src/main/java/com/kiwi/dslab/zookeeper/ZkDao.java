@@ -8,6 +8,8 @@ public interface ZkDao {
 
     List<Double> getAllExchangeRate();  // CNY, USD, JPY, EUR
     double getExchangeRateByName(String currencyName);
-    boolean putExchangeRateByName(String currencyName);
+    boolean putExchangeRateByName(String currencyName, double rate);
     boolean changeExchangeRateRandomly(String currencyName);
+
+    void close();
 }
