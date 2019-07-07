@@ -29,7 +29,10 @@ public class ZkTest {
 
 //        zk.create("/kiwi/txAmount", "0".getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 
-//        zk.setData("/kiwi/CNY", "0.4".getBytes(), -1);
+        zk.setData("/kiwi/CNY", "0.4".getBytes(), -1);
+        zk.setData("/kiwi/USD", "0.7".getBytes(), -1);
+        zk.setData("/kiwi/JPY", "1.0".getBytes(), -1);
+        zk.setData("/kiwi/EUR", "3.0".getBytes(), -1);
 
 //        zk.setData("/test000", "0".getBytes(), -1);
 

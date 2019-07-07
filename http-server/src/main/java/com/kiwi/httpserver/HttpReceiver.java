@@ -58,11 +58,14 @@ public class HttpReceiver extends NanoHTTPD {
 //                    throw new IOException();
 //                }
                 stream.read(buf);
-                System.out.println(new String((buf)));
+                String data = new String(buf);
+                System.out.println(data);
                 producer.send(new ProducerRecord<String, String>(topic, "Message", new String(buf)));
             } catch (IOException e) {
                 e.printStackTrace();
                 return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "wrong");
+            } catch (Exception e) {
+                e.printStackTrace();
             }
             return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "wrong");
 

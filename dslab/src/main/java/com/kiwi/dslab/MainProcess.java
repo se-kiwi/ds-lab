@@ -42,7 +42,7 @@ public class MainProcess {
         kafkaParams.put("enable.auto.commit", false);
 
 //        Collection<String> topics = Arrays.asList(KafkaProperties.TOPIC);
-        Collection<String> topics = Arrays.asList("test002");
+        Collection<String> topics = Arrays.asList("test005");
 
         JavaInputDStream<ConsumerRecord<String, String>> stream =
                 KafkaUtils.createDirectStream(
@@ -75,9 +75,9 @@ public class MainProcess {
                             * exchangeRates.get(name2index.get(response.getCurrencies().get(i)));
                 }
 
-                double paidInCNY = paidInUnit / name2index.get("CNY");
+                double paidInCNY = paidInUnit / exchangeRates.get(name2index.get("CNY"));
                 mysqlDao.storeResult(form.getUser_id(), form.getInitiator(), true,
-                        paidInUnit / name2index.get(form.getInitiator()));
+                        paidInUnit / exchangeRates.get(name2index.get(form.getInitiator())));
                 zkDao.increaseTotalTransactionBy(paidInCNY);
             });
         });

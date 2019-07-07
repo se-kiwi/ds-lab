@@ -20,7 +20,7 @@ public class ZkDaoImpl implements ZkDao {
     public ZkDaoImpl() {
         try {
             final CountDownLatch connectedSignal = new CountDownLatch(1);
-            zk = new ZooKeeper("localhost:2181", 5000, event -> {
+            zk = new ZooKeeper("localhost:2181", 60000, event -> {
                 if (event.getState() == Watcher.Event.KeeperState.SyncConnected) {
                     connectedSignal.countDown();
                 }
