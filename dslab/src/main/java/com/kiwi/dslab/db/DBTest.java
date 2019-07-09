@@ -1,12 +1,5 @@
 package com.kiwi.dslab.db;
 
-import com.kiwi.dslab.dto.db.Item;
-import com.kiwi.dslab.dto.db.OrderForm;
-import com.kiwi.dslab.dto.db.OrderResponse;
-
-import java.util.ArrayList;
-import java.util.List;
-
 public class DBTest {
     public static void main(String[] args) {
         MysqlDao dao = new MysqlDaoImpl();

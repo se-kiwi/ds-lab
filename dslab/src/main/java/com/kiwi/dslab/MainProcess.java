@@ -3,10 +3,10 @@ package com.kiwi.dslab;
 import com.google.gson.Gson;
 import com.kiwi.dslab.db.MysqlDao;
 import com.kiwi.dslab.db.MysqlDaoImpl;
-import com.kiwi.dslab.dto.db.OrderForm;
-import com.kiwi.dslab.dto.db.OrderResponse;
-import com.kiwi.dslab.zookeeper.ZkDao;
-import com.kiwi.dslab.zookeeper.ZkDaoImpl;
+import com.kiwi.dslab.dto.OrderForm;
+import com.kiwi.dslab.dto.OrderResponse;
+import com.kiwi.dslab.zk.ZkDao;
+import com.kiwi.dslab.zk.ZkDaoImpl;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.spark.SparkConf;
@@ -25,20 +25,20 @@ public class MainProcess {
     private static final Gson gson = new Gson();
 
     public static void main(String[] args) {
-        SparkConf conf = new SparkConf().setAppName("spark-streaming").setMaster("local[*]");
+        SparkConf conf = new SparkConf().setAppName("spark-streaming").setMaster(ClusterConf.MASTER);
         JavaStreamingContext streamingContext = new JavaStreamingContext(conf, Durations.seconds(1));
 
         Map<String, Object> kafkaParams = new HashMap<>();
-        kafkaParams.put("bootstrap.servers", KafkaProperties.BROKER_LIST);
+        kafkaParams.put("bootstrap.servers", ClusterConf.BROKER_LIST);
         kafkaParams.put("key.deserializer", StringDeserializer.class);
         kafkaParams.put("value.deserializer", StringDeserializer.class);
-        kafkaParams.put("group.id", KafkaProperties.GROUP_ID);
-//        kafkaParams.put("auto.offset.reset", "latest");
-        kafkaParams.put("auto.offset.reset", "earliest");
+        kafkaParams.put("group.id", ClusterConf.GROUP_ID);
+        kafkaParams.put("auto.offset.reset", "latest");
+//        kafkaParams.put("auto.offset.reset", "earliest");
         kafkaParams.put("enable.auto.commit", false);
 
-//        Collection<String> topics = Arrays.asList(KafkaProperties.TOPIC);
-        Collection<String> topics = Arrays.asList("test006");
+        Collection<String> topics = Arrays.asList(ClusterConf.TOPIC);
+//        Collection<String> topics = Arrays.asList("test006");
 
         JavaInputDStream<ConsumerRecord<String, String>> stream =
                 KafkaUtils.createDirectStream(
@@ -49,13 +49,13 @@ public class MainProcess {
 
         stream.foreachRDD(record -> {
             record.foreach(r -> {
-                System.out.println("Key:   " + r.key());
+//                System.out.println("Key:   " + r.key());
                 System.out.println("Value: " + r.value());
                 MysqlDao mysqlDao = new MysqlDaoImpl();
                 ZkDao zkDao = new ZkDaoImpl();
                 OrderForm form = gson.fromJson(r.value(), OrderForm.class);
 
-                OrderResponse response = mysqlDao.buyItem(form);
+                OrderResponse response = mysqlDao.buyItem(form, zkDao.getZookeeper());
 
                 if (!response.isSuccess()) {
                     mysqlDao.storeResult(form.getUser_id(), form.getInitiator(), false, 0);
@@ -74,6 +74,7 @@ public class MainProcess {
                 mysqlDao.storeResult(form.getUser_id(), form.getInitiator(), true,
                         paidInUnit / exchangeRates.get(name2index.get(form.getInitiator())));
                 zkDao.increaseTotalTransactionBy(paidInCNY);
+                zkDao.close();
             });
         });
 

@@ -1,4 +1,4 @@
-package com.kiwi.dslab.zookeeper;
+package com.kiwi.dslab.zk;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
@@ -15,6 +15,10 @@ public class DistributedLock {
     private CountDownLatch lockAcquiredSignal = new CountDownLatch(1);
 
     private static final List<ACL> DEFAULT_ACL = ZooDefs.Ids.OPEN_ACL_UNSAFE;
+
+    public DistributedLock(ZooKeeper zooKeeper) {
+        this("commodity lock", zooKeeper, "/lock", DEFAULT_ACL);
+    }
 
     public DistributedLock(String name, ZooKeeper zooKeeper, String path) {
         this(name, zooKeeper, path, DEFAULT_ACL);

@@ -1,4 +1,4 @@
-package com.kiwi.dslab.zookeeper;
+package com.kiwi.dslab.zk;
 
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 import static com.kiwi.dslab.util.Utils.*;
-import static com.kiwi.dslab.zookeeper.PathConsts.*;
+import static com.kiwi.dslab.zk.PathConsts.*;
 
 public class ZkDaoImpl implements ZkDao {
 
@@ -94,6 +94,11 @@ public class ZkDaoImpl implements ZkDao {
         if (cur_rate == -1) return false;
         double new_rate = cur_rate * ((getRandInt() % 20 + 90) / 100.0);
         return putExchangeRateByName(currencyName, new_rate);
+    }
+
+    @Override
+    public ZooKeeper getZookeeper() {
+        return zk;
     }
 
     @Override

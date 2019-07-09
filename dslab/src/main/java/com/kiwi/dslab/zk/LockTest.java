@@ -1,15 +1,12 @@
-package com.kiwi.dslab.zookeeper;
+package com.kiwi.dslab.zk;
 
-import org.apache.log4j.PropertyConfigurator;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CountDownLatch;
 
-import static com.kiwi.dslab.KafkaProperties.ZK;
+import static com.kiwi.dslab.ClusterConf.ZK;
 
 public class LockTest {
 
