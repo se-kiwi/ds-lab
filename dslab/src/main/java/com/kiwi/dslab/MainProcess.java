@@ -25,7 +25,8 @@ public class MainProcess {
     private static final Gson gson = new Gson();
 
     public static void main(String[] args) {
-        SparkConf conf = new SparkConf().setAppName("spark-streaming").setMaster(ClusterConf.MASTER);
+        System.out.println(">>>>>>>> BEGIN <<<<<<<<");
+        SparkConf conf = new SparkConf().setAppName("spark-app").setMaster(ClusterConf.MASTER);
         JavaStreamingContext streamingContext = new JavaStreamingContext(conf, Durations.seconds(1));
 
         Map<String, Object> kafkaParams = new HashMap<>();
@@ -33,8 +34,8 @@ public class MainProcess {
         kafkaParams.put("key.deserializer", StringDeserializer.class);
         kafkaParams.put("value.deserializer", StringDeserializer.class);
         kafkaParams.put("group.id", ClusterConf.GROUP_ID);
-        kafkaParams.put("auto.offset.reset", "latest");
-//        kafkaParams.put("auto.offset.reset", "earliest");
+//        kafkaParams.put("auto.offset.reset", "latest");
+        kafkaParams.put("auto.offset.reset", "earliest");
         kafkaParams.put("enable.auto.commit", false);
 
         Collection<String> topics = Arrays.asList(ClusterConf.TOPIC);
@@ -49,16 +50,19 @@ public class MainProcess {
 
         stream.foreachRDD(record -> {
             record.foreach(r -> {
-//                System.out.println("Key:   " + r.key());
+                System.out.println("Key:   " + r.key());
                 System.out.println("Value: " + r.value());
                 MysqlDao mysqlDao = new MysqlDaoImpl();
                 ZkDao zkDao = new ZkDaoImpl();
                 OrderForm form = gson.fromJson(r.value(), OrderForm.class);
 
+                System.out.println("before get response");
                 OrderResponse response = mysqlDao.buyItem(form, zkDao.getZookeeper());
+                System.out.println("after get response");
 
                 if (!response.isSuccess()) {
                     mysqlDao.storeResult(form.getUser_id(), form.getInitiator(), false, 0);
+                    zkDao.close();
                     return;
                 }
 
@@ -77,6 +81,8 @@ public class MainProcess {
                 zkDao.close();
             });
         });
+
+        stream.count().print();
 
         streamingContext.start();
         try {

@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
+import static com.kiwi.dslab.ClusterConf.ZK;
 import static com.kiwi.dslab.util.Utils.*;
 import static com.kiwi.dslab.zk.PathConsts.*;
 
@@ -20,7 +21,7 @@ public class ZkDaoImpl implements ZkDao {
     public ZkDaoImpl() {
         try {
             final CountDownLatch connectedSignal = new CountDownLatch(1);
-            zk = new ZooKeeper("localhost:2181", 60000, event -> {
+            zk = new ZooKeeper(ZK, 60000, event -> {
                 if (event.getState() == Watcher.Event.KeeperState.SyncConnected) {
                     connectedSignal.countDown();
                 }

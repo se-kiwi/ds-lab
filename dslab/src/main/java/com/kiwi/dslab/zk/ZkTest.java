@@ -7,10 +7,12 @@ import org.apache.zookeeper.data.Stat;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
+import static com.kiwi.dslab.ClusterConf.ZK;
+
 public class ZkTest {
     public static void main(String[] args) throws Exception {
         final CountDownLatch connectedSignal = new CountDownLatch(1);
-        ZooKeeper zk = new ZooKeeper("localhost:2181", 5000, event -> {
+        ZooKeeper zk = new ZooKeeper(ZK, 5000, event -> {
             if (event.getState() == Watcher.Event.KeeperState.SyncConnected) {
                 connectedSignal.countDown();
             }

@@ -38,7 +38,9 @@ public class HttpReceiver extends NanoHTTPD {
 
     public HttpReceiver() throws IOException {
         super(SERVER_PORT);
+        System.out.println("before init producer!");
         initProducer();
+        System.out.println("after init producer!");
         start(NanoHTTPD.SOCKET_READ_TIMEOUT, false);  // daemon true!
         System.out.println("Running!");
     }
@@ -93,6 +95,7 @@ public class HttpReceiver extends NanoHTTPD {
     }
 
     public static void main(String[] args) throws IOException {
+        System.out.println("Enter main");
         new HttpReceiver();
     }
 }

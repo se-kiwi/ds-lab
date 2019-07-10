@@ -6,7 +6,8 @@ import json
 
 # config 
 MAX_PROCESS = 5
-URL = "http://localhost:8080/"
+# URL = "http://localhost:30623/"
+URL = "http://202.120.40.8:30623/"
 
 '''
 Sender will send the content of file line by line to URL
