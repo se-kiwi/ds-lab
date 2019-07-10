@@ -1,11 +1,12 @@
-package com.kiwi.dslab;
+package com.kiwi.httpserver.config;
 
-public final class ClusterConf {
-    public static final String MASTER = "k8s://https://10.0.0.81:6443";
-    public static final String ZK="kafkatest-zookeeper:2181";
-    public static final String BROKER_LIST="kafkatest:9092";
+public final class Conf {
+    // nanohttpd
+    public static final int SERVER_PORT = 30704;
 
-//    public static final String MASTER = "local[*]";
+    public static final String ZK="10.233.47.164:2181";
+    public static final String BROKER_LIST="10.233.26.130:9092";
+
 //    public static final String ZK = "localhost:2181";
 //    public static final String BROKER_LIST = "localhost:9092";
 
@@ -17,4 +18,9 @@ public final class ClusterConf {
     public static final String MYSQL_PATH = "jdbc:mysql://202.120.40.8:30706/dslab";
     public static final String MYSQL_USER = "root";
     public static final String MYSQL_PASSWD = "root";
+
+    // Zookeeper Conf
+    public static final String ZK_PATH_TXAMOUNT = "/kiwi/txAmount";
+    public static final int ZK_TIMEOUT = 60000;
+
 }

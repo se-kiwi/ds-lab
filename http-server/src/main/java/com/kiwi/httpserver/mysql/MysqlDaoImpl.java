@@ -4,11 +4,10 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.kiwi.httpserver.config.Conf.*;
+
 
 public class MysqlDaoImpl implements MysqlDao {
-    private static final String DBPATH = "jdbc:mysql://202.120.40.8:30706/dslab";
-    private static final String USER = "root";
-    private static final String PASSWD = "root";
 
     public MysqlDaoImpl() {
         try {
@@ -73,7 +72,7 @@ public class MysqlDaoImpl implements MysqlDao {
     }
 
     private Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(DBPATH, USER, PASSWD);
+        return DriverManager.getConnection(MYSQL_PATH, MYSQL_USER, MYSQL_PASSWD);
     }
 
 }

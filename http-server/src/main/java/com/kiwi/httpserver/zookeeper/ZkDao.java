@@ -6,5 +6,5 @@ public interface ZkDao {
 
     void close();
 
-    public Double getTotalTransactionAmount();
+    Double getTotalTransactionAmount();
 }

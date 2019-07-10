@@ -1,8 +1,7 @@
 package com.kiwi.httpserver;
 
 import com.google.gson.Gson;
-import com.kiwi.httpserver.config.Config;
-import com.kiwi.httpserver.config.KafkaProperties;
+import com.kiwi.httpserver.config.Conf;
 import com.kiwi.httpserver.mysql.MysqlDao;
 import com.kiwi.httpserver.mysql.MysqlDaoImpl;
 import com.kiwi.httpserver.zookeeper.ZkDao;
@@ -17,6 +16,8 @@ import java.io.InputStream;
 import java.util.Map;
 import java.util.Properties;
 
+import static com.kiwi.httpserver.config.Conf.SERVER_PORT;
+
 public class HttpReceiver extends NanoHTTPD {
     private String topic;
     private KafkaProducer<String, String> producer;
@@ -25,9 +26,9 @@ public class HttpReceiver extends NanoHTTPD {
     private Gson gson = new Gson();
 
     private void initProducer() {
-        this.topic = KafkaProperties.TOPIC;
+        this.topic = Conf.TOPIC;
         Properties properties = new Properties();
-        properties.put("bootstrap.servers", KafkaProperties.BROKER_LIST);
+        properties.put("bootstrap.servers", Conf.BROKER_LIST);
         properties.put("acks", "all");
         properties.put("retries", 0);
         properties.put("key.serializer", StringSerializer.class.getName());
@@ -36,7 +37,7 @@ public class HttpReceiver extends NanoHTTPD {
     }
 
     public HttpReceiver() throws IOException {
-        super(Config.SERVER_PORT);
+        super(SERVER_PORT);
         initProducer();
         start(NanoHTTPD.SOCKET_READ_TIMEOUT, false);  // daemon true!
         System.out.println("Running!");
