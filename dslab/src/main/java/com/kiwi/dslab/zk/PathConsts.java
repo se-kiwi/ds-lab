@@ -1,4 +1,4 @@
-package com.kiwi.dslab.zookeeper;
+package com.kiwi.dslab.zk;
 
 import java.util.ArrayList;
 import java.util.List;

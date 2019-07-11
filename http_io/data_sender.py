@@ -3,10 +3,12 @@ from multiprocessing.pool import Pool
 from multiprocessing.context import TimeoutError, Process
 import time
 from data_generator import Generator
+import json
 
 # config 
 MAX_PROCESS = 5
-URL = "http://localhost:8080/"
+# URL = "http://localhost:30623/"
+URL = "http://202.120.40.8:30623/"
 
 '''
 Sender will send the content of file line by line to URL
@@ -19,7 +21,8 @@ class Sender:
     
     @staticmethod
     def send(content):
-        return requests.post(URL, json=content, headers={'Connection':'close'})
+        json_obj = json.loads(content)
+        return requests.post(URL, json=json_obj, headers={'Connection':'close'})
     
     def run(self):
         with open(self.file, "r") as f:

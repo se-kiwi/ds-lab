@@ -1,4 +1,4 @@
-package com.kiwi.dslab.dto.db;
+package com.kiwi.dslab.dto;
 
 public class Item {
     private String id;

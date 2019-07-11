@@ -3,10 +3,10 @@ package com.kiwi.dslab;
 import com.google.gson.Gson;
 import com.kiwi.dslab.db.MysqlDao;
 import com.kiwi.dslab.db.MysqlDaoImpl;
-import com.kiwi.dslab.dto.db.OrderForm;
-import com.kiwi.dslab.dto.db.OrderResponse;
-import com.kiwi.dslab.zookeeper.ZkDao;
-import com.kiwi.dslab.zookeeper.ZkDaoImpl;
+import com.kiwi.dslab.dto.OrderForm;
+import com.kiwi.dslab.dto.OrderResponse;
+import com.kiwi.dslab.zk.ZkDao;
+import com.kiwi.dslab.zk.ZkDaoImpl;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.spark.SparkConf;
@@ -22,28 +22,24 @@ import java.util.*;
 import static com.kiwi.dslab.util.Utils.name2index;
 
 public class MainProcess {
-
+    private static final Gson gson = new Gson();
 
     public static void main(String[] args) {
-
-        Gson gson = new Gson();
-        MysqlDao mysqlDao = new MysqlDaoImpl();
-        ZkDao zkDao = new ZkDaoImpl();
-
-
-        SparkConf conf = new SparkConf().setAppName("spark-streaming").setMaster("local[*]");
+        System.out.println(">>>>>>>> BEGIN <<<<<<<<");
+        SparkConf conf = new SparkConf().setAppName("spark-app").setMaster(ClusterConf.MASTER);
         JavaStreamingContext streamingContext = new JavaStreamingContext(conf, Durations.seconds(1));
 
         Map<String, Object> kafkaParams = new HashMap<>();
-        kafkaParams.put("bootstrap.servers", KafkaProperties.BROKER_LIST);
+        kafkaParams.put("bootstrap.servers", ClusterConf.BROKER_LIST);
         kafkaParams.put("key.deserializer", StringDeserializer.class);
         kafkaParams.put("value.deserializer", StringDeserializer.class);
-        kafkaParams.put("group.id", KafkaProperties.GROUP_ID);
-        kafkaParams.put("auto.offset.reset", "latest");
+        kafkaParams.put("group.id", ClusterConf.GROUP_ID);
+//        kafkaParams.put("auto.offset.reset", "latest");
+        kafkaParams.put("auto.offset.reset", "earliest");
         kafkaParams.put("enable.auto.commit", false);
 
-//        Collection<String> topics = Arrays.asList(KafkaProperties.TOPIC);
-        Collection<String> topics = Arrays.asList("yfzm");
+        Collection<String> topics = Arrays.asList(ClusterConf.TOPIC);
+//        Collection<String> topics = Arrays.asList("test006");
 
         JavaInputDStream<ConsumerRecord<String, String>> stream =
                 KafkaUtils.createDirectStream(
@@ -54,13 +50,19 @@ public class MainProcess {
 
         stream.foreachRDD(record -> {
             record.foreach(r -> {
-//                System.out.println(r.value());
+                System.out.println("Key:   " + r.key());
+                System.out.println("Value: " + r.value());
+                MysqlDao mysqlDao = new MysqlDaoImpl();
+                ZkDao zkDao = new ZkDaoImpl();
                 OrderForm form = gson.fromJson(r.value(), OrderForm.class);
 
-                OrderResponse response = mysqlDao.buyItem(form);
+                System.out.println("before get response");
+                OrderResponse response = mysqlDao.buyItem(form, zkDao.getZookeeper());
+                System.out.println("after get response");
 
                 if (!response.isSuccess()) {
                     mysqlDao.storeResult(form.getUser_id(), form.getInitiator(), false, 0);
+                    zkDao.close();
                     return;
                 }
 
@@ -72,12 +74,15 @@ public class MainProcess {
                             * exchangeRates.get(name2index.get(response.getCurrencies().get(i)));
                 }
 
-                double paidInCNY = paidInUnit / name2index.get("CNY");
+                double paidInCNY = paidInUnit / exchangeRates.get(name2index.get("CNY"));
                 mysqlDao.storeResult(form.getUser_id(), form.getInitiator(), true,
-                        paidInUnit / name2index.get(form.getInitiator()));
+                        paidInUnit / exchangeRates.get(name2index.get(form.getInitiator())));
                 zkDao.increaseTotalTransactionBy(paidInCNY);
+                zkDao.close();
             });
         });
+
+        stream.count().print();
 
         streamingContext.start();
         try {

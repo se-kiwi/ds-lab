@@ -1,4 +1,4 @@
-package com.kiwi.dslab.dto.db;
+package com.kiwi.dslab.dto;
 
 import java.util.List;
 

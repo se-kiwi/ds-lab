@@ -1,4 +1,6 @@
-package com.kiwi.dslab.zookeeper;
+package com.kiwi.dslab.zk;
+
+import org.apache.zookeeper.ZooKeeper;
 
 import java.util.List;
 
@@ -10,6 +12,8 @@ public interface ZkDao {
     double getExchangeRateByName(String currencyName);
     boolean putExchangeRateByName(String currencyName, double rate);
     boolean changeExchangeRateRandomly(String currencyName);
+
+    ZooKeeper getZookeeper();
 
     void close();
 }

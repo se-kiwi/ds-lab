@@ -1,24 +1,22 @@
 package com.kiwi.dslab.db;
 
-import com.kiwi.dslab.dto.db.Item;
-import com.kiwi.dslab.dto.db.OrderForm;
-import com.kiwi.dslab.dto.db.OrderResponse;
-import com.kiwi.dslab.dto.db.ResultResponse;
+import com.kiwi.dslab.dto.Item;
+import com.kiwi.dslab.dto.OrderForm;
+import com.kiwi.dslab.dto.OrderResponse;
+import com.kiwi.dslab.dto.ResultResponse;
+import com.kiwi.dslab.zk.DistributedLock;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.ZooKeeper;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.kiwi.dslab.ClusterConf.*;
 import static com.kiwi.dslab.util.Utils.index2name;
 import static com.kiwi.dslab.util.Utils.getRandInt;
 
-// TODO: acquire lock before access `commodity`
-// TODO: update total transaction in zookeeper
-
 public class MysqlDaoImpl implements MysqlDao {
-    private static final String DBPATH = "jdbc:mysql://202.120.40.8:30706/dslab";
-    private static final String USER = "root";
-    private static final String PASSWD = "root";
 
     public MysqlDaoImpl() {
         try {
@@ -30,12 +28,17 @@ public class MysqlDaoImpl implements MysqlDao {
     }
 
     @Override
-    public OrderResponse buyItem(OrderForm order) {
+    public OrderResponse buyItem(OrderForm order, ZooKeeper zooKeeper) {
         OrderResponse response = new OrderResponse(false, null, null);
         List<Double> prices = new ArrayList<>();
         List<String> currencies = new ArrayList<>();
+        DistributedLock lock = new DistributedLock(zooKeeper);
+
         try {
             Connection connection = getConnection();
+
+            lock.lock();
+
             for (Item item : order.getItems()) {
                 PreparedStatement ps = connection.prepareStatement("SELECT * FROM commodity WHERE id = ?");
                 ps.setInt(1, Integer.valueOf(item.getId()));
@@ -45,6 +48,7 @@ public class MysqlDaoImpl implements MysqlDao {
                     currencies.add(rs.getString("currency"));
                     if (rs.getInt("inventory") < Integer.valueOf(item.getNumber())) {
                         connection.close();
+                        lock.unlock();
                         return response;
                     }
                 }
@@ -57,10 +61,14 @@ public class MysqlDaoImpl implements MysqlDao {
             }
 
             connection.close();
-        } catch (SQLException e) {
+        } catch (SQLException | InterruptedException | KeeperException e) {
             e.printStackTrace();
+            lock.unlock();
             return response;
         }
+
+        lock.unlock();
+
         response.setSuccess(true);
         response.setCurrencies(currencies);
         response.setPrices(prices);
@@ -143,7 +151,7 @@ public class MysqlDaoImpl implements MysqlDao {
     public boolean initCommodity() {
         try {
             Connection connection = getConnection();
-            // drop table commodity
+            // drop table `commodity`
             PreparedStatement ps =
                     connection.prepareStatement("DROP TABLE commodity");
             ps.executeUpdate();
@@ -182,7 +190,7 @@ public class MysqlDaoImpl implements MysqlDao {
     }
 
     private Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(DBPATH, USER, PASSWD);
+        return DriverManager.getConnection(MYSQL_PATH, MYSQL_USER, MYSQL_PASSWD);
     }
 
 }
