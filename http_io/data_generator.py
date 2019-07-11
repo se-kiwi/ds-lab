@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 # base data
 concurrency = ["CNY", "USD", "JPY", "EUR"]
-commodity = ["1", "2", "3", "4"]
+commodity = [str(i) for i in range(500)]
 users = ["1", "2", "3", "4", "5", "6", "7"]
 # users = [1, 2, 3, 4, 5, 6, 7]
 
@@ -85,6 +85,7 @@ class Generator:
 
     @staticmethod
     def generate_to_file(num, file):
+        random.seed()
         offset = num % GENERATE_STRIDE
         num = num - offset
         with open(file, "w") as f:

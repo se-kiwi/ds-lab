@@ -32,3 +32,6 @@ log/
 
 ### generated data
 test-*.data
+
+### pycache
+*.pyc
