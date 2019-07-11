@@ -4,8 +4,10 @@ public final class Conf {
     // nanohttpd
     public static final int SERVER_PORT = 30623;
 
-    public static final String ZK="10.233.47.164:2181";
-    public static final String BROKER_LIST="10.233.26.130:9092";
+//    public static final String ZK="10.233.47.164:2181";
+//    public static final String BROKER_LIST="10.233.26.130:9092";
+    public static final String ZK = "kafkatest-zookeeper:2181";
+    public static final String BROKER_LIST = "kafkatest:9092";
     public static final String MYSQL_PATH = "jdbc:mysql://10.0.0.22:30706/dslab";
 
 
