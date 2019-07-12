@@ -1,3 +1,5 @@
+# 开发文档
+
 ## 系统环境
 
 我们将我们的应用容器化后部署在四个节点组成的kubernetes集群上。我们的四个节点的系统参数化如下表：
@@ -41,7 +43,9 @@ Kubernetes自身没有提供持久化储存，而是依赖于外部分布式储�
 
 在我们的系统中，我们采用了部署较为简单的NFS来提供分布式储存。部署好之后需要有相应的服务来将NFS提供给集群里的应用。也即NFS Provisioner,这是kubernetes官方提供的应用，他会动态的管理PVC(persistence volume )和PV(persistence volume)来为应用提供持久化服务。
 
-`helm install <repo/nfs-provision>`
+```bash
+helm install <repo/nfs-provision>
+```
 
 部署好之后，NFS Provision 会定义一个Storage Class,之后的应用只要指定这个Storage Class即可使用NFS 储存。
 
@@ -49,7 +53,7 @@ Kubernetes自身没有提供持久化储存，而是依赖于外部分布式储�
 
 #### Kafka 及 Zookeeper
 
-由于Kafka依赖于Zookeeper，部署时我们将这两个集群同时部署，在kafa的Chart中加入依赖：
+由于Kafka依赖于Zookeeper，部署时我们将这两个集群同时部署，在Kafka的Chart中加入依赖：
 
 ```yaml
 dependencies:
@@ -57,7 +61,6 @@ dependencies:
   version: 2.x.x
   repository: https://apphub.aliyuncs.com
   condition: zookeeper.enabled
-
 ```
 
 Helm支持使用自定义的配置文件来统一管理应用部署变量，针对我们的需求我们对默认配置进行了以下修改：
@@ -85,7 +88,6 @@ zookeeper:
     size: 8Gi
     annotations: {}
   replicaCount: 3
-
 ```
 
 `helm install kafka -f mykafkavalue.yaml` 后部署截图：
@@ -94,7 +96,9 @@ zookeeper:
 
 #### Spark-operator
 
-`helm install <repo/spark-operator>`
+```sh
+helm install <repo/spark-operator>
+```
 
 Spark-operator 是Google为spark提供的kubernetes原生支持，使得spark容器可以直接运行在kubernetes上，不需要再依赖Hadoop。
 
@@ -153,7 +157,7 @@ public interface MysqlDao {
       |---- txAmount    # total tx amount
       |
 |---- lock    # used for distributed lock
-      |---- x-<session-id>-seqid
+      |---- x-<session-id>-<seq-id>
 ```
 
 #### 分布式锁
@@ -171,11 +175,11 @@ public interface MysqlDao {
 #### 流处理逻辑
 
 1. 首先使用`KafkaUtils.createDirectStream`来获取Kafka的数据流
-2. 使用foreachRDD和foreach方法遍历每一条从Kafka接收的数据，并将其反序列化
-3. 使用MysqlDao提供的购买商品接口，传入反序列化得到的对象，得到购买结果和商品信息（价格和货币种类）
-4. 如果购买失败，将失败信息写入result表，返回；如果成功，继续执行5
-5. 使用ZkDao提供的接口从Zookeeper中查询当前货币汇率
-6. 计算购买价格，将结果存入result表，并将对应的人民币价格存入Zookeeper
+2. 使用`foreachRDD`和`foreach`方法遍历每一条从Kafka接收的数据，并将其反序列化
+3. 使用`MysqlDao`提供的购买商品接口，传入反序列化得到的对象，得到购买结果和商品信息（价格和货币种类）
+4. 如果购买失败，将失败信息写入`result`表，返回；如果成功，继续执行5
+5. 使用`ZkDao`提供的接口从Zookeeper中查询当前货币汇率
+6. 计算购买价格，将结果存入`result`表，并将对应的人民币价格存入Zookeeper
 
 ### HTTP Server
 
@@ -183,13 +187,12 @@ public interface MysqlDao {
 
 我们使用了Nanohttpd来做服务器，因为它比较轻量级，我们也不需要Spring提供的大部分功能。我们提供了以下几个endpoints：
 
-| PATH           | METHOD | PARAMETER               | RESULT                            |
-| -------------- | ------ | ----------------------- | --------------------------------- |
-| /              | POST   | json-based order object | success or not                    |
-| /amount        | GET    | <void>                  | total transaction amount          |
-| /querybyid     | GET    | id                      | json-based result object          |
-| /querybyuserid | GET    | user-id                 | list of json-based result objects |
-|                |        |                         |                                   |
+| PATH             | METHOD | PARAMETER               | RESULT                            |
+| ---------------- | ------ | ----------------------- | --------------------------------- |
+| `/`              | POST   | json-based order object | success or not                    |
+| `/amount`        | GET    | <void>                  | total transaction amount          |
+| `/querybyid`     | GET    | id                      | json-based result object          |
+| `/querybyuserid` | GET    | user-id                 | list of json-based result objects |
 
 ### Order Generator & Sender
 
@@ -197,7 +200,56 @@ public interface MysqlDao {
 
 生成测试数据时设置以下参数：
 
-- MAX_ITEM：每个用户最多购买的物品的种类数（默认为5）
-- MAX_PURCHASE：每件商品最多的购买数量（默认为5）
+- `MAX_ITEM`：每个用户最多购买的物品的种类数（默认为5）
+- `MAX_PURCHASE`：每件商品最多的购买数量（默认为5）
 
-在发送数据时使用requests库，同时使用多进程的方法加速发送速度。
+在发送数据时使用`requests`库，同时使用多进程的方法加速发送速度。
+
+## Trouble Shooting
+
+### 打包依赖
+
+我们将主程序打包成jar格式，以便直接在集群执行或是进一步封装为docker镜像在k8s上运行。在打包的过程中不能直接使用maven的插件，因为这样不会把项目依赖的包打包进去，因此我们需要手动设置artifact。
+
+在这里我们遇到过两个问题：
+
+一是需要在MANIFEST中指定主类，并且需要在添加依赖时选择**Extract Into Output Root**（如下图）。否则，该依赖包不会被解压缩，执行时会报告`Class not found`。
+
+![1562895211383](C:\Users\42594\AppData\Roaming\Typora\typora-user-images\1562895211383.png)
+
+二是有一些依赖包不能被加入到目标Jar包中，在我们的项目中，特指以下两个包：
+
+- net.java.dev.jets3t:jets3t:0.9.4
+- org.bouncycastle:bcprov-jdk15on:1.52
+
+这两个包一旦被引入，运行最终的jar包的时候就会报告找不到主类的错误。jets3t的作用是一些云端储存通信，bcprov-jdk15on的作用是将java1.5的代码移植到1.8中，我们的项目不需要这两个包，至于为什么会报错，我们也不得而知。
+
+### MySQL访问地址
+
+我们将MySQL的端口暴露到集群外部以方便监测和调试。但是在将程序部署到集群时，就不能使用外网地址（202.120.40.4:xxxxx）来访问MySQL，而是需要使用内网地址（10.0.0.22:xxxx）。这是由于软院网段的DNS设置异常导致的，因此我们除了小心规避别无他法。
+
+### 避免Spark Streaming过度优化
+
+在流处理介绍后，需要显式地调用以下语句：
+
+```java
+stream.count().print();
+```
+
+否则因为没有新的RDD生成，Spark Streaming可能会直接忽略我们的数据处理
+
+## 性能优化
+
+### 原始性能
+
+blah blah
+
+### 优化一：行锁换为表锁
+
+blah blah
+
+### 优化二：减少连接数
+
+blah blah
+
+## 成员分工
