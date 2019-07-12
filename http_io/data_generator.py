@@ -6,7 +6,7 @@ from dataclasses import dataclass
 # base data
 concurrency = ["CNY", "USD", "JPY", "EUR"]
 commodity = [str(i) for i in range(500)]
-users = ["1", "2", "3", "4", "5", "6", "7"]
+users = [str(i) for i in range(500)]
 # users = [1, 2, 3, 4, 5, 6, 7]
 
 # generator config
