@@ -215,7 +215,7 @@ public interface MysqlDao {
 
 一是需要在MANIFEST中指定主类，并且需要在添加依赖时选择**Extract Into Output Root**（如下图）。否则，该依赖包不会被解压缩，执行时会报告`Class not found`。
 
-![1562895211383](C:\Users\42594\AppData\Roaming\Typora\typora-user-images\1562895211383.png)
+![1562895211383](./pic/1562895211383.png)
 
 二是有一些依赖包不能被加入到目标Jar包中，在我们的项目中，特指以下两个包：
 
