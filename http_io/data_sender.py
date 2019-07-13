@@ -5,50 +5,68 @@ import time
 from data_generator import Generator
 import json
 import sys
+from functools import partial
 
 # config 
-MAX_PROCESS = 5
-# URL = "http://localhost:30623/"
+# URL = "http://httpserver:30623/"
 URL = "http://202.120.40.8:30623/"
 
 '''
 Sender will send the content of file line by line to URL
 '''
 class Sender:
-    url : str
-    def __init__(self, file, proc = MAX_PROCESS):
-        self.file = file
+    def __init__(self, files, proc, ops):
+        self.files = files
         self.pool = Pool(processes=proc)
+        self.ops = ops
     
     @staticmethod
-    def send(content):
-        json_obj = json.loads(content)
-        return requests.post(URL, json=json_obj, headers={'Connection':'close'})
+    def send(ops, file):
+        ans = []
+        delay = 1.0 / ops
+        with open(file, "r") as f:
+            s = f.readlines()
+            # start2 = time.clock()
+            for i in s:
+                start = time.clock()
+                json_obj = json.loads(i)
+                ans.append(requests.post(URL, json=json_obj,\
+                    headers={'Connection':'close'}))
+                end = time.clock()
+                sleep_time = delay - end + start
+                # print("sleep time:" + str(sleep_time))
+                if (sleep_time > 0):
+                    time.sleep(sleep_time)
+            # end2 = time.clock()
+            # print("consume %f sec", end2 - start2)
+        return ans
     
     def run(self):
-        with open(self.file, "r") as f:
-            s = f.readlines()
-        self.pool.map(Sender.send, s)
-
-def send_from_file(file):
-    Sender(file, MAX_PROCESS).run()
+        self.pool.map(partial(Sender.send, self.ops), self.files)
     
 if __name__ == "__main__":
     param = sys.argv
-    if len(param) != 3 and not param[1].isdigit() and not param[1].isdigit():
-        print("Usage:\n\tprocess number\n\torder number\nexample: ./data_sender.py 3 200")
+    if len(param) != 4 or not param[1].isdigit() \
+        or not param[2].isdigit() or not param[3].isdigit():
+        print("Usage:\n"
+                "\tprocess number\n"
+                "\torder number\n "
+                "\torder per second"
+            "example: \./data_sender.py 3 200 20")
         exit()
     sender_num = int(param[1])
     order_num = int(param[2])
-    requests.post(URL, json={"user":"data"}, headers={'Connection':'close'})
+    ops = int(param[3])
+    # requests.post(URL, json={"user":"data"}, headers={'Connection':'close'})
+    # sender_num = 1
+    # order_num = 20
+    # ops = 10
+
+    # generate test data files
     filenames = ["test-" + str(i) +".data" for i in range(sender_num)]
     for i in filenames:
         Generator.generate_to_file(order_num, i)
-    process = []
-    for i in filenames:
-        p = Process(target=send_from_file, args=(i,))
-        p.start()
-        print(str(p.pid) + "is running")
-        process.append(p)
-    for p in process:
-        p.join()
+
+    s = Sender(filenames, sender_num, ops)
+    s.run()
+    

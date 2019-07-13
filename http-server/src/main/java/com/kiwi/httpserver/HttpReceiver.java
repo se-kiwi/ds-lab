@@ -52,7 +52,8 @@ public class HttpReceiver extends NanoHTTPD {
         Method method = session.getMethod();
         String uri = session.getUri();
         Map<String, String> parms = session.getParms();
-
+//        System.out.println(uri);
+//        System.out.println(method);
         if (method == Method.POST && uri.equals("/")) {
             String order_id = UUID.randomUUID().toString();
             try {
@@ -68,7 +69,7 @@ public class HttpReceiver extends NanoHTTPD {
                 OrderForm form = gson.fromJson(data, OrderForm.class);
                 form.setOrder_id(order_id);
 //
-                System.out.println(gson.toJson(form));
+//                System.out.println(gson.toJson(form));
 
                 producer.send(new ProducerRecord<String, String>(topic, gson.toJson(form)));
             } catch (Exception e) {
@@ -92,10 +93,10 @@ public class HttpReceiver extends NanoHTTPD {
                     }
                     return newFixedLengthResponse(gson.toJson(mysqlDao.getResultByUserId(parms.get("userid"))));
                 default:
-                    return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "wrong");
+                    return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "no such get uri");
             }
         } else {
-            return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "wrong");
+            return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "this method or uri not supported");
         }
     }
 
