@@ -8,8 +8,8 @@ import sys
 from functools import partial
 
 # config 
-# URL = "http://httpserver:30623/"
-URL = "http://202.120.40.8:30623/"
+URL = "http://httpserver:30623/"
+# URL = "http://202.120.40.8:30623/"
 
 '''
 Sender will send the content of file line by line to URL
@@ -26,19 +26,21 @@ class Sender:
         delay = 1.0 / ops
         with open(file, "r") as f:
             s = f.readlines()
-            # start2 = time.clock()
+            start2 = time.time()
+            print("start send")
             for i in s:
-                start = time.clock()
+                start = time.time()
                 json_obj = json.loads(i)
                 ans.append(requests.post(URL, json=json_obj,\
                     headers={'Connection':'close'}))
-                end = time.clock()
+                end = time.time()
                 sleep_time = delay - end + start
                 # print("sleep time:" + str(sleep_time))
                 if (sleep_time > 0):
                     time.sleep(sleep_time)
-            # end2 = time.clock()
-            # print("consume %f sec", end2 - start2)
+            end2 = time.time()
+            print("end send")
+            print("consume " + str(end2 - start2) + " sec")
         return ans
     
     def run(self):
@@ -51,7 +53,7 @@ if __name__ == "__main__":
         print("Usage:\n"
                 "\tprocess number\n"
                 "\torder number\n "
-                "\torder per second"
+                "\torder per second\n"
             "example: \./data_sender.py 3 200 20")
         exit()
     sender_num = int(param[1])

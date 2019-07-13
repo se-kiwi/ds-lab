@@ -52,7 +52,8 @@ public class HttpReceiver extends NanoHTTPD {
         Method method = session.getMethod();
         String uri = session.getUri();
         Map<String, String> parms = session.getParms();
-//        System.out.println(uri);
+        System.out.println(uri);
+        System.out.println(method);
 //        System.out.println(method);
         if (method == Method.POST && uri.equals("/")) {
             String order_id = UUID.randomUUID().toString();
@@ -70,7 +71,7 @@ public class HttpReceiver extends NanoHTTPD {
                 form.setOrder_id(order_id);
 //
 //                System.out.println(gson.toJson(form));
-
+                System.out.println(topic + form.getOrder_id());
                 producer.send(new ProducerRecord<String, String>(topic, gson.toJson(form)));
             } catch (Exception e) {
                 e.printStackTrace();
