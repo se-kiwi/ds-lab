@@ -207,6 +207,17 @@ public interface MysqlDao {
 
 ## Trouble Shooting
 
+### spark-operator权限
+
+由于采用k8s上的spark operator，我们需要保证spark driver有权限在kubernetes创建和编辑pod。因此spark driver 启动抛异常 *system: serviceaccount: default: default" cannot get pods in the namespace "default*, ，执行以下两条命令: 
+`kubectl create rolebinding default-view --clusterrole=view --serviceaccount=default:default --namespace=defalut` 和 
+`kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=default:default --namespace=default` 设置好权限后就可以了 
+
+### kubernetes service 域名
+
+kubernetes内部服务都会使用service域名并采用coreDNS进行解析，以屏蔽各个应用实例的变化，但是host machine无法解析这些域名，因此host machine上的应用无法通过service域名连接到kubernetes内部应用。而且在zookeeper中，应用都是通过service域名进行注册的，为了能够让外部应用也能访问到zookeeper中注册的服务，我们在host machine上也将coreDNS添加到DNS解析列表中。
+
+
 ### 打包依赖
 
 我们将主程序打包成jar格式，以便直接在集群执行或是进一步封装为docker镜像在k8s上运行。在打包的过程中不能直接使用maven的插件，因为这样不会把项目依赖的包打包进去，因此我们需要手动设置artifact。
