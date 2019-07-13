@@ -22,7 +22,7 @@ public final class Conf {
 
     // MySQL Conf
     public static final String MYSQL_USER = "root";
-    public static final String MYSQL_PASSWD = "root";
+    public static String MYSQL_PASSWD = "root";
 
     // Zookeeper Conf
     public static final String ZK_PATH_TXAMOUNT = "/kiwi/txAmount";

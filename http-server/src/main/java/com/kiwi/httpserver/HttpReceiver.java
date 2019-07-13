@@ -95,7 +95,11 @@ public class HttpReceiver extends NanoHTTPD {
     }
 
     public static void main(String[] args) throws IOException {
-        System.out.println("Enter main");
+        if (args.length != 1) {
+            System.out.println("Usage: java -jar <name.jar> MYSQL_PASSWORD");
+            return;
+        }
+        Conf.MYSQL_PASSWD = args[0];
         new HttpReceiver();
     }
 }
