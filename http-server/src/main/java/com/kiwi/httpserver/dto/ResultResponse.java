@@ -1,4 +1,4 @@
-package com.kiwi.httpserver.mysql;
+package com.kiwi.httpserver.dto;
 
 public class ResultResponse {
     private String order_id;

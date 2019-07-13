@@ -61,7 +61,7 @@ public class MainProcess {
                 System.out.println("after get response");
 
                 if (!response.isSuccess()) {
-                    mysqlDao.storeResult(form.getUser_id(), form.getInitiator(), false, 0);
+                    mysqlDao.storeResult(form.getOrder_id(), form.getUser_id(), form.getInitiator(), false, 0);
                     zkDao.close();
                     return;
                 }
@@ -75,7 +75,7 @@ public class MainProcess {
                 }
 
                 double paidInCNY = paidInUnit / exchangeRates.get(name2index.get("CNY"));
-                mysqlDao.storeResult(form.getUser_id(), form.getInitiator(), true,
+                mysqlDao.storeResult(form.getOrder_id(), form.getUser_id(), form.getInitiator(), true,
                         paidInUnit / exchangeRates.get(name2index.get(form.getInitiator())));
                 zkDao.increaseTotalTransactionBy(paidInCNY);
                 zkDao.close();

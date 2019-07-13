@@ -2,6 +2,7 @@ package com.kiwi.httpserver;
 
 import com.google.gson.Gson;
 import com.kiwi.httpserver.config.Conf;
+import com.kiwi.httpserver.dto.OrderForm;
 import com.kiwi.httpserver.mysql.MysqlDao;
 import com.kiwi.httpserver.mysql.MysqlDaoImpl;
 import com.kiwi.httpserver.zookeeper.ZkDao;
@@ -15,6 +16,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 import java.util.Properties;
+import java.util.UUID;
 
 import static com.kiwi.httpserver.config.Conf.SERVER_PORT;
 
@@ -52,6 +54,7 @@ public class HttpReceiver extends NanoHTTPD {
         Map<String, String> parms = session.getParms();
 
         if (method == Method.POST && uri.equals("/")) {
+            String order_id = UUID.randomUUID().toString();
             try {
                 byte[] buf;
                 InputStream stream = session.getInputStream();
@@ -62,15 +65,17 @@ public class HttpReceiver extends NanoHTTPD {
 //                }
                 stream.read(buf);
                 String data = new String(buf);
-                System.out.println(data);
-                producer.send(new ProducerRecord<String, String>(topic, "Message", new String(buf)));
-            } catch (IOException e) {
-                e.printStackTrace();
-                return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "wrong");
+                OrderForm form = gson.fromJson(data, OrderForm.class);
+                form.setOrder_id(order_id);
+//
+                System.out.println(gson.toJson(form));
+
+                producer.send(new ProducerRecord<String, String>(topic, gson.toJson(form)));
             } catch (Exception e) {
                 e.printStackTrace();
+                return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "-1");
             }
-            return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "wrong");
+            return newFixedLengthResponse(Response.Status.OK, "text", order_id);
 
         } else if (method == Method.GET) {
             switch (uri) {
