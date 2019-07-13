@@ -35,7 +35,7 @@ def send_from_file(file):
     
 if __name__ == "__main__":
     param = sys.argv
-    if len(param) != 3 and not param[1].isdigit() and not param[1].isdigit():
+    if len(param) != 3 or not param[1].isdigit() or not param[1].isdigit():
         print("Usage:\n\tprocess number\n\torder number\nexample: ./data_sender.py 3 200")
         exit()
     sender_num = int(param[1])
