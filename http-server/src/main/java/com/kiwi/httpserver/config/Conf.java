@@ -14,7 +14,7 @@ public final class Conf {
     public static final String MYSQL_PATH = "jdbc:mysql://202.120.40.8:30706/dslab";
 
     // Kafka Conf
-    public static final String TOPIC = "test009";
+    public static final String TOPIC = "test010";
     public static final String GROUP_ID = "group01";
 
 
