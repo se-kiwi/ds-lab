@@ -3,8 +3,10 @@ package com.kiwi.dslab;
 import com.google.gson.Gson;
 import com.kiwi.dslab.db.MysqlDao;
 import com.kiwi.dslab.db.MysqlDaoImpl;
+import com.kiwi.dslab.dto.Item;
 import com.kiwi.dslab.dto.OrderForm;
 import com.kiwi.dslab.dto.OrderResponse;
+import com.kiwi.dslab.zk.DistributedLock;
 import com.kiwi.dslab.zk.ZkDao;
 import com.kiwi.dslab.zk.ZkDaoImpl;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -16,6 +18,7 @@ import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka010.ConsumerStrategies;
 import org.apache.spark.streaming.kafka010.KafkaUtils;
 import org.apache.spark.streaming.kafka010.LocationStrategies;
+import org.apache.zookeeper.KeeperException;
 
 import java.util.*;
 
@@ -55,10 +58,30 @@ public class MainProcess {
                 MysqlDao mysqlDao = new MysqlDaoImpl();
                 ZkDao zkDao = new ZkDaoImpl();
                 OrderForm form = gson.fromJson(r.value(), OrderForm.class);
-
-                System.out.println("before get response");
-                OrderResponse response = mysqlDao.buyItem(form, zkDao.getZookeeper());
-                System.out.println("after get response");
+                List<Item> sorted = form.getItems();
+                sorted.sort(Comparator.comparing(Item::getId));
+                List<DistributedLock> lockList = new ArrayList<>();
+                for (Item i : sorted){
+                    DistributedLock lock = new DistributedLock(zkDao.getZookeeper(),i.getId());
+                    lockList.add(lock);
+                }
+                OrderResponse response = new OrderResponse();
+                try {
+                    for (DistributedLock lc : lockList) {
+                        lc.lock();
+                    }
+                    System.out.println("before get response");
+                    response = mysqlDao.buyItem(form, zkDao.getZookeeper());
+                    System.out.println("after get response");
+                }catch (KeeperException | InterruptedException e){
+                    e.printStackTrace();
+                    return;
+                }finally {
+                    Collections.reverse(lockList);
+                    for (DistributedLock lc : lockList) {
+                        lc.unlock();
+                    }
+                }
 
                 if (!response.isSuccess()) {
                     mysqlDao.storeResult(form.getUser_id(), form.getInitiator(), false, 0);

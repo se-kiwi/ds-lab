@@ -32,12 +32,9 @@ public class MysqlDaoImpl implements MysqlDao {
         OrderResponse response = new OrderResponse(false, null, null);
         List<Double> prices = new ArrayList<>();
         List<String> currencies = new ArrayList<>();
-        DistributedLock lock = new DistributedLock(zooKeeper);
 
         try {
             Connection connection = getConnection();
-
-            lock.lock();
 
             for (Item item : order.getItems()) {
                 PreparedStatement ps = connection.prepareStatement("SELECT * FROM commodity WHERE id = ?");
@@ -48,7 +45,6 @@ public class MysqlDaoImpl implements MysqlDao {
                     currencies.add(rs.getString("currency"));
                     if (rs.getInt("inventory") < Integer.valueOf(item.getNumber())) {
                         connection.close();
-                        lock.unlock();
                         return response;
                     }
                 }
@@ -61,13 +57,11 @@ public class MysqlDaoImpl implements MysqlDao {
             }
 
             connection.close();
-        } catch (SQLException | InterruptedException | KeeperException e) {
+        } catch (SQLException e) {
             e.printStackTrace();
-            lock.unlock();
             return response;
         }
 
-        lock.unlock();
 
         response.setSuccess(true);
         response.setCurrencies(currencies);

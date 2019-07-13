@@ -7,6 +7,9 @@ public class OrderResponse {
     private List<Double> prices;
     private List<String> currencies;
 
+    public OrderResponse() {
+    }
+
     public OrderResponse(boolean success, List<Double> prices, List<String> currencies) {
         this.success = success;
         this.prices = prices;
