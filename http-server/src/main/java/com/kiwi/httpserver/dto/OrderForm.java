@@ -1,4 +1,4 @@
-package com.kiwi.dslab.dto;
+package com.kiwi.httpserver.dto;
 
 import java.util.List;
 

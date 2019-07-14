@@ -33,7 +33,8 @@ public class DBTest {
 //        System.out.println(response);
 
 //        dao.storeResult("1", "CNY", true, 33.5);
-        dao.initCommodity();
+//        dao.initCommodity();
+        dao.initResult();
     }
 
 }

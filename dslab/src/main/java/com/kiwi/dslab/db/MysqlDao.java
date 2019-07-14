@@ -9,9 +9,8 @@ import java.util.List;
 
 public interface MysqlDao {
     OrderResponse buyItem(OrderForm order, ZooKeeper zooKeeper);
-    boolean storeResult(String user_id, String initiator, boolean success, double paid);
-    ResultResponse getResultById(String id);
-    List<ResultResponse> getResultByUserId(String userId);
+    boolean storeResult(String order_id, String user_id, String initiator, boolean success, double paid);
 
     boolean initCommodity();
+    boolean initResult();
 }

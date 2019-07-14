@@ -37,8 +37,6 @@ public class MysqlDaoImpl implements MysqlDao {
         try {
             Connection connection = getConnection();
 
-            lock.lock();
-
             for (Item item : order.getItems()) {
                 PreparedStatement ps = connection.prepareStatement("SELECT * FROM commodity WHERE id = ?");
                 ps.setInt(1, Integer.valueOf(item.getId()));
@@ -48,7 +46,7 @@ public class MysqlDaoImpl implements MysqlDao {
                     currencies.add(rs.getString("currency"));
                     if (rs.getInt("inventory") < Integer.valueOf(item.getNumber())) {
                         connection.close();
-                        lock.unlock();
+//                        lock.unlock();
                         return response;
                     }
                 }
@@ -61,13 +59,13 @@ public class MysqlDaoImpl implements MysqlDao {
             }
 
             connection.close();
-        } catch (SQLException | InterruptedException | KeeperException e) {
+        } catch (SQLException e) {
             e.printStackTrace();
-            lock.unlock();
+//            lock.unlock();
             return response;
         }
 
-        lock.unlock();
+//        lock.unlock();
 
         response.setSuccess(true);
         response.setCurrencies(currencies);
@@ -76,15 +74,16 @@ public class MysqlDaoImpl implements MysqlDao {
     }
 
     @Override
-    public boolean storeResult(String user_id, String initiator, boolean success, double paid) {
+    public boolean storeResult(String order_id, String user_id, String initiator, boolean success, double paid) {
         try {
             Connection connection = getConnection();
             PreparedStatement preparedStatement
-                    = connection.prepareStatement("INSERT result (user_id, initiator, success, paid) VALUES (?, ?, ?, ?)");
-            preparedStatement.setInt(1, Integer.valueOf(user_id));
-            preparedStatement.setString(2, initiator);
-            preparedStatement.setBoolean(3, success);
-            preparedStatement.setDouble(4, paid);
+                    = connection.prepareStatement("INSERT result (id, user_id, initiator, success, paid) VALUES (?, ?, ?, ?, ?)");
+            preparedStatement.setString(1, order_id);
+            preparedStatement.setInt(2, Integer.valueOf(user_id));
+            preparedStatement.setString(3, initiator);
+            preparedStatement.setBoolean(4, success);
+            preparedStatement.setDouble(5, paid);
             preparedStatement.executeUpdate();
             connection.close();
         } catch (SQLException e) {
@@ -92,59 +91,6 @@ public class MysqlDaoImpl implements MysqlDao {
             return false;
         }
         return true;
-    }
-
-    @Override
-    public ResultResponse getResultById(String id) {
-        ResultResponse response = null;
-
-        try {
-            Connection connection = getConnection();
-            PreparedStatement ps = connection.prepareStatement("SELECT * FROM result WHERE id = ?");
-            ps.setString(1, id);
-            ResultSet rs = ps.executeQuery();
-
-            while (rs.next()) {
-                response = new ResultResponse();
-                response.setOrder_id(rs.getString("id"));
-                response.setUser_id(rs.getString("user_id"));
-                response.setInitiator(rs.getString("initiator"));
-                response.setSuccess(rs.getBoolean("success"));
-                response.setPaid(rs.getDouble("paid"));
-            }
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return null;
-        }
-        return response;
-    }
-
-    @Override
-    public List<ResultResponse> getResultByUserId(String userId) {
-        List<ResultResponse> response = new ArrayList<>();
-
-        try {
-            Connection connection = getConnection();
-            PreparedStatement ps = connection.prepareStatement("SELECT * FROM result WHERE user_id = ?");
-            ps.setString(1, userId);
-            ResultSet rs = ps.executeQuery();
-
-            while (rs.next()) {
-                ResultResponse or = new ResultResponse();
-                or.setOrder_id(rs.getString("id"));
-                or.setUser_id(rs.getString("user_id"));
-                or.setInitiator(rs.getString("initiator"));
-                or.setSuccess(rs.getBoolean("success"));
-                or.setPaid(rs.getDouble("paid"));
-                response.add(or);
-            }
-            connection.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return null;
-        }
-        return response;
     }
 
     @Override
@@ -182,6 +128,32 @@ public class MysqlDaoImpl implements MysqlDao {
                 ps.executeUpdate();
             }
             connection.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean initResult() {
+        try {
+            Connection connection = getConnection();
+            // drop table `result`
+            PreparedStatement ps =
+                    connection.prepareStatement("DROP TABLE result");
+            ps.executeUpdate();
+
+            // create new table `result`
+            ps = connection.prepareStatement("create table result\n" +
+                    "(\n" +
+                    "    id varchar(36) primary key,\n" +
+                    "    user_id int not null,\n" +
+                    "    initiator varchar(8) not null,\n" +
+                    "    success bool not null,\n" +
+                    "    paid double not null\n" +
+                    ");");
+            ps.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
             return false;

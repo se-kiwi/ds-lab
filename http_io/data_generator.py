@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 # base data
 concurrency = ["CNY", "USD", "JPY", "EUR"]
-commodity = [str(i) for i in range(500)]
+commodity = [str(i) for i in range(1, 501)]
 users = [str(i) for i in range(500)]
 # users = [1, 2, 3, 4, 5, 6, 7]
 
