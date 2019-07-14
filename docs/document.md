@@ -330,6 +330,20 @@ blah blah
 
 ### 优化二：减少连接数
 
-blah blah
+这里通过修改spark streaming逻辑来实现减少连接数的目的。
+
+通过在foreachRDD内部使用forEachPartition，在其内部首先创建`MysqlDao`和`ZookeeperDao`然后使用forEachRemaining包裹原先处理逻辑。
+
+这样处理可以使得每次只在一个Partition内部创建一次连接，而不是在处理每个订单时都重新建立连接。
+
+同时，原先的逻辑还存在一个问题，当并发数量提升，系统吞吐量增加的时候，原先的设计可能会导致MySQL连接耗尽，使得整个系统宕机。
+
+在不进行优化一的情况下。单独进行优化二，性能有所上升。如果将两个优化联合进行，性能可以提升至原来两倍，吞吐量可以达到11.7 RPS。
 
 ## 成员分工
+
+| 姓名 | 分工|
+| -- | -- |
+|兰智勇|实现HTTPSever、实现测试数据生成、HTTPSender|
+|李浩|实现分布式锁、数据操作接口、Spark Streaming处理逻辑、搭建MySQL|
+|王谱越|搭建K8s、Spark、Kafka、Zookeeper，编写更新汇率|
