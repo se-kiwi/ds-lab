@@ -12,8 +12,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
@@ -57,27 +56,20 @@ public class HttpReceiver extends NanoHTTPD {
         if (method == Method.POST && uri.equals("/")) {
             String order_id = UUID.randomUUID().toString();
             try {
-                byte[] buf;
+                char[] buf;
                 InputStream stream = session.getInputStream();
-                buf = new byte[stream.available()];
-//            assert stream.read(buf) == 0;
-//                if (stream.read(buf) == 0) {
-//                    throw new IOException();
-//                }
-                stream.read(buf);
+                buf = new char[stream.available()];
+                new BufferedReader(new InputStreamReader(stream))
+                        .read(buf, 0, stream.available());
                 String data = new String(buf);
-                OrderForm form = gson.fromJson(data, OrderForm.class);
-                form.setOrder_id(order_id);
-//
-//                System.out.println(gson.toJson(form));
+                System.out.println(data);
 
-                producer.send(new ProducerRecord<String, String>(topic, gson.toJson(form)));
+                producer.send(new ProducerRecord<String, String>(topic, order_id, data));
+                return newFixedLengthResponse(Response.Status.OK, "text", order_id);
             } catch (Exception e) {
                 e.printStackTrace();
                 return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "-1");
             }
-            return newFixedLengthResponse(Response.Status.OK, "text", order_id);
-
         } else if (method == Method.GET) {
             switch (uri) {
                 case "/amount":
