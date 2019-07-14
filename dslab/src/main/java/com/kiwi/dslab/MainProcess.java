@@ -63,6 +63,7 @@ public class MainProcess {
 
         stream.foreachRDD(record -> {
             record.foreach(r -> {
+                long rdd_start = System.nanoTime();
                 LOG.info("Key:   " + r.key());
                 LOG.info("Value: " + r.value());
                 MysqlDao mysqlDao = new MysqlDaoImpl();
@@ -117,7 +118,7 @@ public class MainProcess {
 //                    System.out.printf("price: %d, actual: %d\n", response.getPrices().size(), form.getItems().size());
                 }
 
-
+                long ex_start = System.nanoTime();
                 List<Double> exchangeRates = zkDao.getAllExchangeRate();
                 double paidInUnit = 0;
                 for (int i = 0; i < form.getItems().size(); i++) {
@@ -131,6 +132,10 @@ public class MainProcess {
                         paidInUnit / exchangeRates.get(name2index.get(form.getInitiator())));
                 zkDao.increaseTotalTransactionBy(paidInCNY);
                 zkDao.close();
+                long rdd_end = System.nanoTime();
+                System.out.println("[read exchange] time cost: " +String.valueOf(rdd_end-ex_start));
+                System.out.println("[RDD] time cost: " +String.valueOf(rdd_end-rdd_start));
+
             });
         });
 
