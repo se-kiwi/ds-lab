@@ -29,7 +29,11 @@ KubeSpray是基于Ansible的kubernetes的自动化部署工具，它提供了一
 
 需要注意的是，由于kubernetes大部分依赖托管在Google上，因此需要先将依赖镜像以及二进制文件离线缓存，分别加载到docker 缓存与本地环境变量中。
 
-当一切就绪：`ansible-playbook -i inventory/mycluster/hosts.yml --become --become-user=root cluster.yml` ，即可开始部署。
+当一切就绪，运行以下命令即可开始部署：
+
+```sh
+ansible-playbook -i inventory/mycluster/hosts.yml --become --become-user=root cluster.yml 
+```
 
 ### Kubernetes上应用部署
 
@@ -187,12 +191,12 @@ public interface MysqlDao {
 
 我们使用了Nanohttpd来做服务器，因为它比较轻量级，我们也不需要Spring提供的大部分功能。我们提供了以下几个endpoints：
 
-| PATH             | METHOD | PARAMETER               | RESULT                            |
-| ---------------- | ------ | ----------------------- | --------------------------------- |
-| `/`              | POST   | json-based order object | success or not                    |
-| `/amount`        | GET    | <void>                  | total transaction amount          |
-| `/querybyid`     | GET    | id                      | json-based result object          |
-| `/querybyuserid` | GET    | user-id                 | list of json-based result objects |
+| PATH             | METHOD | PARAMETER               | RESULT                              |
+| ---------------- | ------ | ----------------------- | ----------------------------------- |
+| `/`              | POST   | json-based order object | `order_id` if success, -1 otherwise |
+| `/amount`        | GET    | <void>                  | total transaction amount            |
+| `/querybyid`     | GET    | id                      | json-based result object            |
+| `/querybyuserid` | GET    | user-id                 | list of json-based result objects   |
 
 ### Order Generator & Sender
 
@@ -205,13 +209,78 @@ public interface MysqlDao {
 
 在发送数据时使用`requests`库，同时使用多进程的方法加速发送速度。
 
+## 结果展示
+
+### 集群运行情况
+
+![1563075241926](./pic/1563075241926.png)
+
+k8s集群中运行了以下六部分：
+
+| 类别          | 数量 | 备注                                                       |
+| ------------- | ---- | ---------------------------------------------------------- |
+| sparkoperator | 1    | saprk运行环境                                              |
+| kafka         | 3    | kafka集群                                                  |
+| zookeeper     | 3    | zookeeper集群                                              |
+| demo-app      | 3    | spark streaming主程序，负责订单处理(1个driver+2个executor) |
+| http-server   | 2    | 处理用户请求，并将订单数据存入kafka                        |
+| nfs-client    | 1    | 提供持久化储存服务                                         |
+
+对外暴露以下接口：
+
+| 类别          | url                      | 备注                                                      |
+| ------------- | ------------------------ | --------------------------------------------------------- |
+| http-server   | httpserver:30623         | 已配置DNS，裸机上可以据此访问server，外部网络则需要使用ip |
+| kafka broker  | kafkatest:9002           | 同上，但不暴露给外部                                      |
+| zookeeper     | kafkatest-zookeeper:2181 | 同上                                                      |
+| spark-ui      | ip:30624                 | 同上，但在外部可以通过ip访问                              |
+| kafka-manager | ip:30621                 | 同上                                                      |
+
+### spark-streaming运行情况
+
+![1563081334320](./pic/1563081334320.png)
+
+由图可见，运行了两个executor，且task分布很均匀。
+
+### 追踪一次订单请求
+
+依次进行以下步骤：
+
+1. 发送POST请求
+
+   ```json
+   {
+       "user_id": "3", 
+       "initiator": "JPY", 
+       "time": 1563019284990, 
+       "items": [
+           {"id": "23", "number": "5"}, 
+           {"id": "297", "number": "2"}, 
+           {"id": "60", "number": "4"}
+       ]
+   } 
+   ```
+
+2. 收到order_id
+
+   ![1563081571466](./pic/1563081571466.png)
+
+3. 根据id查询订单结果
+
+   ![1563081667318](./pic/1563081667318.png)
+
 ## Trouble Shooting
 
 ### spark-operator权限
 
 由于采用k8s上的spark operator，我们需要保证spark driver有权限在kubernetes创建和编辑pod。因此spark driver 启动抛异常 *system: serviceaccount: default: default" cannot get pods in the namespace "default*, ，执行以下两条命令: 
-`kubectl create rolebinding default-view --clusterrole=view --serviceaccount=default:default --namespace=defalut` 和 
-`kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=default:default --namespace=default` 设置好权限后就可以了 
+
+```sh
+kubectl create rolebinding default-view --clusterrole=view --serviceaccount=default:default --namespace=defalut
+kubectl create rolebinding default-admin --clusterrole=admin --serviceaccount=default:default --namespace=default
+```
+
+设置好权限后就可以了。
 
 ### kubernetes service 域名
 
@@ -230,10 +299,10 @@ kubernetes内部服务都会使用service域名并采用coreDNS进行解析，�
 
 二是有一些依赖包不能被加入到目标Jar包中，在我们的项目中，特指以下两个包：
 
-- net.java.dev.jets3t:jets3t:0.9.4
-- org.bouncycastle:bcprov-jdk15on:1.52
+- `net.java.dev.jets3t:jets3t:0.9.4`
+- `org.bouncycastle:bcprov-jdk15on:1.52`
 
-这两个包一旦被引入，运行最终的jar包的时候就会报告找不到主类的错误。jets3t的作用是一些云端储存通信，bcprov-jdk15on的作用是将java1.5的代码移植到1.8中，我们的项目不需要这两个包，至于为什么会报错，我们也不得而知。
+这两个包一旦被引入，运行最终的jar包的时候就会报告找不到主类的错误。`jets3t`的作用是一些云端储存通信，`bcprov-jdk15on`的作用是将java1.5的代码移植到1.8中，我们的项目不需要这两个包，至于为什么会报错，我们也不得而知。
 
 ### MySQL访问地址
 
