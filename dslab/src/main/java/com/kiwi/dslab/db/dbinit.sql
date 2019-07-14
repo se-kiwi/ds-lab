@@ -9,7 +9,7 @@ create table commodity
 
 create table result
 (
-    id int primary key auto_increment,
+    id varchar(36) primary key,
     user_id int not null,
     initiator varchar(8) not null,
     success bool not null,

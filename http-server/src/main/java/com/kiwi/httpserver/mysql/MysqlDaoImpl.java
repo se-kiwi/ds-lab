@@ -1,5 +1,7 @@
 package com.kiwi.httpserver.mysql;
 
+import com.kiwi.httpserver.dto.ResultResponse;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;

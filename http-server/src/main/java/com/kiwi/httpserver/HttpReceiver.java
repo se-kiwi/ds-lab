@@ -2,6 +2,7 @@ package com.kiwi.httpserver;
 
 import com.google.gson.Gson;
 import com.kiwi.httpserver.config.Conf;
+import com.kiwi.httpserver.dto.OrderForm;
 import com.kiwi.httpserver.mysql.MysqlDao;
 import com.kiwi.httpserver.mysql.MysqlDaoImpl;
 import com.kiwi.httpserver.zookeeper.ZkDao;
@@ -11,10 +12,10 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.Map;
 import java.util.Properties;
+import java.util.UUID;
 
 import static com.kiwi.httpserver.config.Conf.SERVER_PORT;
 
@@ -50,28 +51,25 @@ public class HttpReceiver extends NanoHTTPD {
         Method method = session.getMethod();
         String uri = session.getUri();
         Map<String, String> parms = session.getParms();
-
+//        System.out.println(uri);
+//        System.out.println(method);
         if (method == Method.POST && uri.equals("/")) {
+            String order_id = UUID.randomUUID().toString();
             try {
-                byte[] buf;
+                char[] buf;
                 InputStream stream = session.getInputStream();
-                buf = new byte[stream.available()];
-//            assert stream.read(buf) == 0;
-//                if (stream.read(buf) == 0) {
-//                    throw new IOException();
-//                }
-                stream.read(buf);
+                buf = new char[stream.available()];
+                new BufferedReader(new InputStreamReader(stream))
+                        .read(buf, 0, stream.available());
                 String data = new String(buf);
                 System.out.println(data);
-                producer.send(new ProducerRecord<String, String>(topic, "Message", new String(buf)));
-            } catch (IOException e) {
-                e.printStackTrace();
-                return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "wrong");
+
+                producer.send(new ProducerRecord<String, String>(topic, order_id, data));
+                return newFixedLengthResponse(Response.Status.OK, "text", order_id);
             } catch (Exception e) {
                 e.printStackTrace();
+                return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "-1");
             }
-            return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "wrong");
-
         } else if (method == Method.GET) {
             switch (uri) {
                 case "/amount":
@@ -87,15 +85,19 @@ public class HttpReceiver extends NanoHTTPD {
                     }
                     return newFixedLengthResponse(gson.toJson(mysqlDao.getResultByUserId(parms.get("userid"))));
                 default:
-                    return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "wrong");
+                    return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "no such get uri");
             }
         } else {
-            return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "wrong");
+            return newFixedLengthResponse(Response.Status.BAD_REQUEST, "text", "this method or uri not supported");
         }
     }
 
     public static void main(String[] args) throws IOException {
-        System.out.println("Enter main");
+        if (args.length != 1) {
+            System.out.println("Usage: java -jar <name.jar> MYSQL_PASSWORD");
+            return;
+        }
+        Conf.MYSQL_PASSWD = args[0];
         new HttpReceiver();
     }
 }
