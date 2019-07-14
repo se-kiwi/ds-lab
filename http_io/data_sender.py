@@ -8,8 +8,8 @@ import sys
 from functools import partial
 
 # config 
-# URL = "http://httpserver:30623/"
-URL = "http://202.120.40.8:30623/"
+URL = "http://httpserver:30623/"
+# URL = "http://202.120.40.8:30623/"
 
 '''
 Sender will send the content of file line by line to URL
@@ -26,9 +26,10 @@ class Sender:
         delay = 1.0 / ops
         with open(file, "r") as f:
             s = f.readlines()
-            # start2 = time.clock()
+            start2 = time.time()
+            print("start send")
             for i in s:
-                start = time.clock()
+                start = time.time()
                 json_obj = json.loads(i)
                 ret = requests.post(URL, json=json_obj,\
                     headers={'Connection':'close'})
@@ -38,30 +39,31 @@ class Sender:
                 # print("sleep time:" + str(sleep_time))
                 if (sleep_time > 0):
                     time.sleep(sleep_time)
-            # end2 = time.clock()
-            # print("consume %f sec", end2 - start2)
+            end2 = time.time()
+            print("end send")
+            print("consume " + str(end2 - start2) + " sec")
         return ans
     
     def run(self):
         return self.pool.map(partial(Sender.send, self.ops), self.files)
     
 if __name__ == "__main__":
-    # param = sys.argv
-    # if len(param) != 4 or not param[1].isdigit() \
-    #     or not param[2].isdigit() or not param[3].isdigit():
-    #     print("Usage:\n"
-    #             "\tprocess number\n"
-    #             "\torder number\n "
-    #             "\torder per second"
-    #         "example: \./data_sender.py 3 200 20")
-    #     exit()
-    # sender_num = int(param[1])
-    # order_num = int(param[2])
-    # ops = int(param[3])
+    param = sys.argv
+    if len(param) != 4 or not param[1].isdigit() \
+        or not param[2].isdigit() or not param[3].isdigit():
+        print("Usage:\n"
+                "\tprocess number\n"
+                "\torder number\n "
+                "\torder per second\n"
+            "example: \./data_sender.py 3 200 20")
+        exit()
+    sender_num = int(param[1])
+    order_num = int(param[2])
+    ops = int(param[3])
     # requests.post(URL, json={"user":"data"}, headers={'Connection':'close'})
-    sender_num = 1
-    order_num = 20
-    ops = 10
+    # sender_num = 1
+    # order_num = 20
+    # ops = 10
     # s = '{"user_id": 1,"initiator": "EUR","time": 1562416385042,"items": [{"id": "2","number": 1},{"id": "2","number": 1},{"id": "2","number": 1},{"id": "3","number": 3}]}'
     # json_obj = json.loads(s)
     
