@@ -25,6 +25,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.rmi.runtime.Log;
 
+import java.time.Duration;
+import java.time.LocalDate;
 import java.util.*;
 
 import static com.kiwi.dslab.util.Utils.name2index;
@@ -77,12 +79,20 @@ public class MainProcess {
                 OrderResponse response = new OrderResponse();
               
                 try {
+                    LocalDate l_start = LocalDate.now();
                     for (DistributedLock lc : lockList) {
                         lc.lock();
                     }
+                    LocalDate l_end = LocalDate.now();
+                    Duration durations = Duration.between(l_start,l_end);
+                    System.out.println("[locking] time cost: " +durations.toNanos());
                     System.out.println("before get response");
+                    LocalDate r_start = LocalDate.now();
                     response = mysqlDao.buyItem(form, zkDao.getZookeeper());
+                    LocalDate r_end = LocalDate.now();
+                    Duration duration_r = Duration.between(r_start,r_end);
                     System.out.println("after get response");
+                    System.out.println("[buyItem] time cost: "+ duration_r.toNanos());
                 }catch (KeeperException | InterruptedException e){
                     e.printStackTrace();
                     return;
