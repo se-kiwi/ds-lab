@@ -20,6 +20,9 @@ public class DistributedLock {
         this("commodity lock", zooKeeper, "/lock", DEFAULT_ACL);
     }
 
+    public DistributedLock (ZooKeeper zooKeeper, String commodityId){
+        this("commodity lock", zooKeeper, "/lock/"+commodityId, DEFAULT_ACL);
+    }
     public DistributedLock(String name, ZooKeeper zooKeeper, String path) {
         this(name, zooKeeper, path, DEFAULT_ACL);
     }

@@ -3,6 +3,7 @@ package com.kiwi.dslab;
 import com.google.gson.Gson;
 import com.kiwi.dslab.db.MysqlDao;
 import com.kiwi.dslab.db.MysqlDaoImpl;
+import com.kiwi.dslab.dto.Item;
 import com.kiwi.dslab.dto.OrderForm;
 import com.kiwi.dslab.dto.OrderResponse;
 import com.kiwi.dslab.zk.DistributedLock;
@@ -19,6 +20,7 @@ import org.apache.spark.streaming.kafka010.ConsumerStrategies;
 import org.apache.spark.streaming.kafka010.KafkaUtils;
 import org.apache.spark.streaming.kafka010.LocationStrategies;
 import org.apache.zookeeper.KeeperException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.rmi.runtime.Log;
@@ -65,21 +67,31 @@ public class MainProcess {
                 ZkDao zkDao = new ZkDaoImpl();
                 OrderForm form = gson.fromJson(r.value(), OrderForm.class);
                 form.setOrder_id(r.key());
-                DistributedLock lock = new DistributedLock(zkDao.getZookeeper());
-
-
-                OrderResponse response;
+                List<Item> sorted = form.getItems();
+                sorted.sort(Comparator.comparing(Item::getId));
+                List<DistributedLock> lockList = new ArrayList<>();
+                for (Item i : sorted){
+                    DistributedLock lock = new DistributedLock(zkDao.getZookeeper(),i.getId());
+                    lockList.add(lock);
+                }
+                OrderResponse response = new OrderResponse();
+              
                 try {
-                    LOG.warn("[" + zkDao.getZookeeper().getSessionId() + "]: try to lock");
-                    lock.lock();
-                    LOG.warn("[" + zkDao.getZookeeper().getSessionId() + "]: get lock");
+                    for (DistributedLock lc : lockList) {
+                        lc.lock();
+                    }
+                    System.out.println("before get response");
                     response = mysqlDao.buyItem(form, zkDao.getZookeeper());
-                } catch (KeeperException | InterruptedException e) {
+                    System.out.println("after get response");
+                }catch (KeeperException | InterruptedException e){
                     e.printStackTrace();
                     return;
-                } finally {
-                    lock.unlock();
-                    LOG.warn("[" + zkDao.getZookeeper().getSessionId() + "]: release lock");
+                }finally {
+                    Collections.reverse(lockList);
+                    for (DistributedLock lc : lockList) {
+                        lc.unlock();
+                    }
+
                 }
 
                 if (!response.isSuccess()) {
