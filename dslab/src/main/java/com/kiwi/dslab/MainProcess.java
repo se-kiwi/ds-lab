@@ -61,81 +61,88 @@ public class MainProcess {
                         ConsumerStrategies.<String, String>Subscribe(topics, kafkaParams)
                 );
 
-        stream.foreachRDD(record -> {
-            record.foreach(r -> {
-                long rdd_start = System.nanoTime();
-                LOG.info("Key:   " + r.key());
-                LOG.info("Value: " + r.value());
+        stream.foreachRDD(rdd -> {
+            rdd.foreachPartition(partition -> {
                 MysqlDao mysqlDao = new MysqlDaoImpl();
                 ZkDao zkDao = new ZkDaoImpl();
-                OrderForm form = gson.fromJson(r.value(), OrderForm.class);
-                form.setOrder_id(r.key());
-                List<Item> sorted = form.getItems();
-                sorted.sort(Comparator.comparing(Item::getId));
-                List<DistributedLock> lockList = new ArrayList<>();
-                for (Item i : sorted){
-                    DistributedLock lock = new DistributedLock(zkDao.getZookeeper(),i.getId());
-                    lockList.add(lock);
-                }
-                OrderResponse response = new OrderResponse();
-              
-                try {
-                    long l_start = System.nanoTime();
-                    for (DistributedLock lc : lockList) {
-                        lc.lock();
+                partition.forEachRemaining(r -> {
+                    long rdd_start = System.nanoTime();
+                    LOG.info("Key:   " + r.key());
+                    LOG.info("Value: " + r.value());
+
+                    OrderForm form = gson.fromJson(r.value(), OrderForm.class);
+                    form.setOrder_id(r.key());
+
+                    DistributedLock lock = new DistributedLock(zkDao.getZookeeper());
+//                    List<Item> sorted = form.getItems();
+//                    sorted.sort(Comparator.comparing(Item::getId));
+//                    List<DistributedLock> lockList = new ArrayList<>();
+//                    for (Item i : sorted) {
+//                        DistributedLock lock = new DistributedLock(zkDao.getZookeeper(), i.getId());
+//                        lockList.add(lock);
+//                    }
+                    OrderResponse response = new OrderResponse();
+
+                    try {
+                        long l_start = System.nanoTime();
+//                        for (DistributedLock lc : lockList) {
+//                            lc.lock();
+//                        }
+                        lock.lock();
+
+                        long l_end = System.nanoTime();
+                        System.out.println("[locking] time cost: " + String.valueOf(l_end - l_start));
+                        System.out.println("before get response");
+                        long r_start = System.nanoTime();
+                        response = mysqlDao.buyItem(form, zkDao.getZookeeper());
+                        long r_end = System.nanoTime();
+                        System.out.println("after get response");
+                        System.out.println("[buyItem] time cost: " + String.valueOf(r_end - r_start));
+                    } catch (KeeperException | InterruptedException e) {
+                        e.printStackTrace();
+                        return;
+                    } finally {
+//                        Collections.reverse(lockList);
+//                        for (DistributedLock lc : lockList) {
+//                            lc.unlock();
+//                        }
+                        lock.unlock();
                     }
-                    long l_end = System.nanoTime();
-                    System.out.println("[locking] time cost: " +String.valueOf(l_end-l_start));
-                    System.out.println("before get response");
-                    long r_start = System.nanoTime();
-                    response = mysqlDao.buyItem(form, zkDao.getZookeeper());
-                    long r_end = System.nanoTime();
-                    System.out.println("after get response");
-                    System.out.println("[buyItem] time cost: " +String.valueOf(r_end-r_start));
-                }catch (KeeperException | InterruptedException e){
-                    e.printStackTrace();
-                    return;
-                }finally {
-                    Collections.reverse(lockList);
-                    for (DistributedLock lc : lockList) {
-                        lc.unlock();
+
+                    if (!response.isSuccess()) {
+                        mysqlDao.storeResult(form.getOrder_id(), form.getUser_id(), form.getInitiator(), false, 0);
+                        zkDao.close();
+                        return;
                     }
 
-                }
-
-                if (!response.isSuccess()) {
-                    mysqlDao.storeResult(form.getOrder_id(), form.getUser_id(), form.getInitiator(), false, 0);
-                    zkDao.close();
-                    return;
-                }
-
-                if (form.getItems().size() != response.getCurrencies().size()) {
+                    if (form.getItems().size() != response.getCurrencies().size()) {
 //                    System.out.printf("currency: %d, actual: %d\n", response.getCurrencies().size(), form.getItems().size());
-                    LOG.error("currency: " + response.getCurrencies() + ", actual: " + form.getItems());
-                }
-                if (form.getItems().size() != response.getPrices().size()) {
-                    LOG.error("price: " + response.getPrices() + ", actual: " + form.getItems());
+                        LOG.error("currency: " + response.getCurrencies() + ", actual: " + form.getItems());
+                    }
+                    if (form.getItems().size() != response.getPrices().size()) {
+                        LOG.error("price: " + response.getPrices() + ", actual: " + form.getItems());
 //                    System.out.printf("price: %d, actual: %d\n", response.getPrices().size(), form.getItems().size());
-                }
+                    }
 
-                long ex_start = System.nanoTime();
-                List<Double> exchangeRates = zkDao.getAllExchangeRate();
-                double paidInUnit = 0;
-                for (int i = 0; i < form.getItems().size(); i++) {
-                    paidInUnit += Integer.valueOf(form.getItems().get(i).getNumber())
-                            * response.getPrices().get(i)
-                            * exchangeRates.get(name2index.get(response.getCurrencies().get(i)));
-                }
+                    long ex_start = System.nanoTime();
+                    List<Double> exchangeRates = zkDao.getAllExchangeRate();
+                    double paidInUnit = 0;
+                    for (int i = 0; i < form.getItems().size(); i++) {
+                        paidInUnit += Integer.valueOf(form.getItems().get(i).getNumber())
+                                * response.getPrices().get(i)
+                                * exchangeRates.get(name2index.get(response.getCurrencies().get(i)));
+                    }
 
-                double paidInCNY = paidInUnit / exchangeRates.get(name2index.get("CNY"));
-                mysqlDao.storeResult(form.getOrder_id(), form.getUser_id(), form.getInitiator(), true,
-                        paidInUnit / exchangeRates.get(name2index.get(form.getInitiator())));
-                zkDao.increaseTotalTransactionBy(paidInCNY);
+                    double paidInCNY = paidInUnit / exchangeRates.get(name2index.get("CNY"));
+                    mysqlDao.storeResult(form.getOrder_id(), form.getUser_id(), form.getInitiator(), true,
+                            paidInUnit / exchangeRates.get(name2index.get(form.getInitiator())));
+                    zkDao.increaseTotalTransactionBy(paidInCNY);
+                    long rdd_end = System.nanoTime();
+                    System.out.println("[read exchange] time cost: " + String.valueOf(rdd_end - ex_start));
+                    System.out.println("[RDD] time cost: " + String.valueOf(rdd_end - rdd_start));
+
+                });
                 zkDao.close();
-                long rdd_end = System.nanoTime();
-                System.out.println("[read exchange] time cost: " +String.valueOf(rdd_end-ex_start));
-                System.out.println("[RDD] time cost: " +String.valueOf(rdd_end-rdd_start));
-
             });
         });
 

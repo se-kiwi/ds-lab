@@ -14,7 +14,7 @@ public final class ClusterConf {
 //    public static final String LOG_PROPERTY = "src\\main\\resources\\log4j.properties";
 
     // Kafka Conf
-    public static final String TOPIC = "test013";
+    public static final String TOPIC = "test017";
     public static final String GROUP_ID = "group01";
 
     // MySQL Conf
