@@ -30,8 +30,9 @@ class Sender:
             for i in s:
                 start = time.clock()
                 json_obj = json.loads(i)
-                ans.append(requests.post(URL, json=json_obj,\
-                    headers={'Connection':'close'}))
+                ret = requests.post(URL, json=json_obj,\
+                    headers={'Connection':'close'})
+                ans.append(ret.content)
                 end = time.clock()
                 sleep_time = delay - end + start
                 # print("sleep time:" + str(sleep_time))
@@ -42,25 +43,32 @@ class Sender:
         return ans
     
     def run(self):
-        self.pool.map(partial(Sender.send, self.ops), self.files)
+        return self.pool.map(partial(Sender.send, self.ops), self.files)
     
 if __name__ == "__main__":
-    param = sys.argv
-    if len(param) != 4 or not param[1].isdigit() \
-        or not param[2].isdigit() or not param[3].isdigit():
-        print("Usage:\n"
-                "\tprocess number\n"
-                "\torder number\n "
-                "\torder per second"
-            "example: \./data_sender.py 3 200 20")
-        exit()
-    sender_num = int(param[1])
-    order_num = int(param[2])
-    ops = int(param[3])
+    # param = sys.argv
+    # if len(param) != 4 or not param[1].isdigit() \
+    #     or not param[2].isdigit() or not param[3].isdigit():
+    #     print("Usage:\n"
+    #             "\tprocess number\n"
+    #             "\torder number\n "
+    #             "\torder per second"
+    #         "example: \./data_sender.py 3 200 20")
+    #     exit()
+    # sender_num = int(param[1])
+    # order_num = int(param[2])
+    # ops = int(param[3])
     # requests.post(URL, json={"user":"data"}, headers={'Connection':'close'})
-    # sender_num = 1
-    # order_num = 20
-    # ops = 10
+    sender_num = 1
+    order_num = 20
+    ops = 10
+    # s = '{"user_id": 1,"initiator": "EUR","time": 1562416385042,"items": [{"id": "2","number": 1},{"id": "2","number": 1},{"id": "2","number": 1},{"id": "3","number": 3}]}'
+    # json_obj = json.loads(s)
+    
+    # ret = requests.post(URL, json=json_obj,\
+    #                 headers={'Connection':'close'})
+    # print(ret)
+    # print(ret.content)
 
     # generate test data files
     filenames = ["test-" + str(i) +".data" for i in range(sender_num)]
@@ -68,5 +76,6 @@ if __name__ == "__main__":
         Generator.generate_to_file(order_num, i)
 
     s = Sender(filenames, sender_num, ops)
-    s.run()
+    ret = s.run()
+    print(ret)
     
