@@ -79,20 +79,18 @@ public class MainProcess {
                 OrderResponse response = new OrderResponse();
               
                 try {
-                    LocalDate l_start = LocalDate.now();
+                    long l_start = System.nanoTime();
                     for (DistributedLock lc : lockList) {
                         lc.lock();
                     }
-                    LocalDate l_end = LocalDate.now();
-                    Duration durations = Duration.between(l_start,l_end);
-                    System.out.println("[locking] time cost: " +durations.toNanos());
+                    long l_end = System.nanoTime();
+                    System.out.println("[locking] time cost: " +String.valueOf(l_end-l_start));
                     System.out.println("before get response");
-                    LocalDate r_start = LocalDate.now();
+                    long r_start = System.nanoTime();
                     response = mysqlDao.buyItem(form, zkDao.getZookeeper());
-                    LocalDate r_end = LocalDate.now();
-                    Duration duration_r = Duration.between(r_start,r_end);
+                    long r_end = System.nanoTime();
                     System.out.println("after get response");
-                    System.out.println("[buyItem] time cost: "+ duration_r.toNanos());
+                    System.out.println("[buyItem] time cost: " +String.valueOf(r_end-r_start));
                 }catch (KeeperException | InterruptedException e){
                     e.printStackTrace();
                     return;
