@@ -67,61 +67,89 @@ public class MainProcess {
                 ZkDao zkDao = new ZkDaoImpl();
                 partition.forEachRemaining(r -> {
                     long rdd_start = System.nanoTime();
-                    LOG.info("Key:   " + r.key());
-                    LOG.info("Value: " + r.value());
+
+                    if (ClusterConf.IN_DEBUG_MODE) {
+                        LOG.info("Key:   " + r.key());
+                        LOG.info("Value: " + r.value());
+                    }
 
                     OrderForm form = gson.fromJson(r.value(), OrderForm.class);
+                    if (form == null) {
+                        LOG.warn("json object is not supported, value: " + r.value());
+                        return;
+                    }
                     form.setOrder_id(r.key());
 
-                    DistributedLock lock = new DistributedLock(zkDao.getZookeeper());
-//                    List<Item> sorted = form.getItems();
-//                    sorted.sort(Comparator.comparing(Item::getId));
-//                    List<DistributedLock> lockList = new ArrayList<>();
-//                    for (Item i : sorted) {
-//                        DistributedLock lock = new DistributedLock(zkDao.getZookeeper(), i.getId());
-//                        lockList.add(lock);
-//                    }
+                    DistributedLock lock;
+                    List<DistributedLock> lockList;
+
+                    if (ClusterConf.IS_LOCK_LINE_LEVEL) {
+                        List<Item> sorted = form.getItems();
+                        sorted.sort(Comparator.comparing(Item::getId));
+                        lockList = new ArrayList<>();
+                        for (Item i : sorted) {
+                            DistributedLock tlock = new DistributedLock(zkDao.getZookeeper(), i.getId());
+                            lockList.add(tlock);
+                        }
+                    } else {
+                        lock = new DistributedLock(zkDao.getZookeeper());
+                    }
+
                     OrderResponse response = new OrderResponse();
 
                     try {
                         long l_start = System.nanoTime();
-//                        for (DistributedLock lc : lockList) {
-//                            lc.lock();
-//                        }
-                        lock.lock();
+
+                        if (ClusterConf.IS_LOCK_LINE_LEVEL) {
+                            for (DistributedLock lc : lockList) {
+                                lc.lock();
+                            }
+                        } else {
+                            lock.lock();
+                        }
 
                         long l_end = System.nanoTime();
-                        System.out.println("[locking] time cost: " + String.valueOf(l_end - l_start));
-                        System.out.println("before get response");
+
+                        if (ClusterConf.IN_DEBUG_MODE) {
+                            System.out.println("[locking] time cost: " + (l_end - l_start));
+                            System.out.println("before get response");
+                        }
                         long r_start = System.nanoTime();
                         response = mysqlDao.buyItem(form, zkDao.getZookeeper());
                         long r_end = System.nanoTime();
-                        System.out.println("after get response");
-                        System.out.println("[buyItem] time cost: " + String.valueOf(r_end - r_start));
+                        if (ClusterConf.IN_DEBUG_MODE) {
+                            System.out.println("after get response");
+                            System.out.println("[buyItem] time cost: " + (r_end - r_start));
+                        }
                     } catch (KeeperException | InterruptedException e) {
                         e.printStackTrace();
                         return;
                     } finally {
-//                        Collections.reverse(lockList);
-//                        for (DistributedLock lc : lockList) {
-//                            lc.unlock();
-//                        }
-                        lock.unlock();
+                        if (ClusterConf.IS_LOCK_LINE_LEVEL) {
+                            Collections.reverse(lockList);
+                            for (DistributedLock lc : lockList) {
+                                lc.unlock();
+                            }
+                        } else {
+                            lock.unlock();
+                        }
                     }
 
                     if (!response.isSuccess()) {
                         mysqlDao.storeResult(form.getOrder_id(), form.getUser_id(), form.getInitiator(), false, 0);
-                        zkDao.close();
+//                        zkDao.close();
                         return;
                     }
 
-                    if (form.getItems().size() != response.getCurrencies().size()) {
+                    if (ClusterConf.IN_DEBUG_MODE) {
+                        if (form.getItems().size() != response.getCurrencies().size()) {
 //                    System.out.printf("currency: %d, actual: %d\n", response.getCurrencies().size(), form.getItems().size());
-                        LOG.error("currency: " + response.getCurrencies() + ", actual: " + form.getItems());
-                    }
-                    if (form.getItems().size() != response.getPrices().size()) {
-                        LOG.error("price: " + response.getPrices() + ", actual: " + form.getItems());
+                            LOG.error("currency: " + response.getCurrencies() + ", actual: " + form.getItems());
+                        }
+                        if (form.getItems().size() != response.getPrices().size()) {
+                            LOG.error("price: " + response.getPrices() + ", actual: " + form.getItems());
 //                    System.out.printf("price: %d, actual: %d\n", response.getPrices().size(), form.getItems().size());
+                        }
                     }
 
                     long ex_start = System.nanoTime();
@@ -138,9 +166,11 @@ public class MainProcess {
                             paidInUnit / exchangeRates.get(name2index.get(form.getInitiator())));
                     zkDao.increaseTotalTransactionBy(paidInCNY);
                     long rdd_end = System.nanoTime();
-                    System.out.println("[read exchange] time cost: " + String.valueOf(rdd_end - ex_start));
-                    System.out.println("[RDD] time cost: " + String.valueOf(rdd_end - rdd_start));
 
+                    if (ClusterConf.IN_DEBUG_MODE) {
+                        System.out.println("[read exchange] time cost: " + String.valueOf(rdd_end - ex_start));
+                        System.out.println("[RDD] time cost: " + String.valueOf(rdd_end - rdd_start));
+                    }
                 });
                 zkDao.close();
             });

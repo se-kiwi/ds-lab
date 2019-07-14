@@ -17,6 +17,7 @@
  */
 package org.apache.zookeeper.recipes.lock;
 
+import com.kiwi.dslab.ClusterConf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.zookeeper.KeeperException;
@@ -205,7 +206,7 @@ public class WriteLock extends ProtocolSupport {
         public boolean execute() throws KeeperException, InterruptedException {
             do {
                 if (id == null) {
-                    LOG.warn("[kiwi] id==null");
+                    log_warn("[kiwi] id==null");
                     long sessionId = zookeeper.getSessionId();
                     String prefix = "x-" + sessionId + "-";
                     // lets try look up the current ID if we failed 
@@ -226,9 +227,9 @@ public class WriteLock extends ProtocolSupport {
                         sortedNames.add(new ZNodeName(dir + "/" + name));
                     }
                     ownerId = sortedNames.first().getName();
-                    LOG.warn("[kiwi] ownerId: " + ownerId + " myId: " + id);
+                    log_warn("[kiwi] ownerId: " + ownerId + " myId: " + id);
                     SortedSet<ZNodeName> lessThanMe = sortedNames.headSet(idName);
-                    LOG.warn("[kiwi] is lessThanMe empty?  " + lessThanMe.isEmpty());
+                    log_warn("[kiwi] is lessThanMe empty?  " + lessThanMe.isEmpty());
                     if (!lessThanMe.isEmpty()) {
                         ZNodeName lastChildName = lessThanMe.last();
                         lastChildId = lastChildName.getName();
@@ -237,17 +238,17 @@ public class WriteLock extends ProtocolSupport {
                         }
                         Stat stat = zookeeper.exists(lastChildId, new LockWatcher());
                         if (stat != null) {
-                            LOG.warn("[kiwi] watching less than me node: " + lastChildId);
+                            log_warn("[kiwi] watching less than me node: " + lastChildId);
                             return Boolean.FALSE;
                         } else {
                             LOG.warn("Could not find the" +
                                             " stats for less than me: " + lastChildName.getName());
-                            LOG.warn("reset id: " + id + " -> null");
+                            log_warn("reset id: " + id + " -> null");
                             id = null;  // modified by kiwi
                         }
                     } else {
                         if (isOwner()) {
-                            LOG.warn("[kiwi] not owner");
+                            log_warn("[kiwi] I'm the owner!");
                             LockListener lockListener = getLockListener();
                             if (lockListener != null) {
                                 lockListener.lockAcquired();
@@ -298,6 +299,12 @@ public class WriteLock extends ProtocolSupport {
      */
     public String getId() {
        return this.id;
+    }
+
+    private void log_warn(String msg) {
+        if (ClusterConf.IN_DEBUG_MODE) {
+            LOG.warn(msg);
+        }
     }
 }
 

@@ -20,4 +20,7 @@ public final class ClusterConf {
     // MySQL Conf
     public static final String MYSQL_USER = "root";
     public static final String MYSQL_PASSWD = "root+1s";
+
+    public static final boolean IS_LOCK_LINE_LEVEL = true;
+    public static final boolean IN_DEBUG_MODE = true;
 }
