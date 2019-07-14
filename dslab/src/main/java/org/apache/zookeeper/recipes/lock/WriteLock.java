@@ -238,6 +238,7 @@ public class WriteLock extends ProtocolSupport {
                         } else {
                             LOG.warn("Could not find the" +
                                             " stats for less than me: " + lastChildName.getName());
+                            id = null;  // modified by kiwi
                         }
                     } else {
                         if (isOwner()) {

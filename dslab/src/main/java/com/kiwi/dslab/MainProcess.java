@@ -59,11 +59,12 @@ public class MainProcess {
 
         stream.foreachRDD(record -> {
             record.foreach(r -> {
-//                LOG.info("Key:   " + r.key());
+                LOG.info("Key:   " + r.key());
                 LOG.info("Value: " + r.value());
                 MysqlDao mysqlDao = new MysqlDaoImpl();
                 ZkDao zkDao = new ZkDaoImpl();
                 OrderForm form = gson.fromJson(r.value(), OrderForm.class);
+                form.setOrder_id(r.key());
                 DistributedLock lock = new DistributedLock(zkDao.getZookeeper());
 
 
