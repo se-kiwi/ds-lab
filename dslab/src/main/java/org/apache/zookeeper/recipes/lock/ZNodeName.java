@@ -82,11 +82,11 @@ class ZNodeName implements Comparable<ZNodeName> {
      *         or a negative number if this znode has a lower sequence number
      */
     public int compareTo(ZNodeName that) {
-        int answer = this.sequence - that.sequence;
-        if (answer == 0) {
-            return this.prefix.compareTo(that.prefix);
-        }
-        return answer;
+        int s1 = this.sequence;
+        int s2 = that.sequence;
+        if (s1 == -1 && s2 == -1)
+        { return this.name.compareTo(that.name); }
+        return s1 == -1 ? 1 : s2 == -1 ? -1 : s1 - s2;
     }
 
     /**

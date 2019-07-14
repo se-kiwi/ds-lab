@@ -179,7 +179,7 @@ public class WriteLock extends ProtocolSupport {
             List<String> names = zookeeper.getChildren(dir, false);
             for (String name : names) {
                 if (name.startsWith(prefix)) {
-                    id = name;
+                    id = dir + "/" + name;
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("Found id created last time: " + id);
                     }
