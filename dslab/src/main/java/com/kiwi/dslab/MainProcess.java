@@ -20,10 +20,8 @@ import org.apache.spark.streaming.kafka010.ConsumerStrategies;
 import org.apache.spark.streaming.kafka010.KafkaUtils;
 import org.apache.spark.streaming.kafka010.LocationStrategies;
 import org.apache.zookeeper.KeeperException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.rmi.runtime.Log;
 
 import java.util.*;
 
@@ -59,70 +57,73 @@ public class MainProcess {
                         ConsumerStrategies.<String, String>Subscribe(topics, kafkaParams)
                 );
 
-        stream.foreachRDD(record -> {
-            record.foreach(r -> {
-                LOG.info("Key:   " + r.key());
-                LOG.info("Value: " + r.value());
+        stream.foreachRDD(rdd -> {
+            rdd.foreachPartition(partition -> {
                 MysqlDao mysqlDao = new MysqlDaoImpl();
                 ZkDao zkDao = new ZkDaoImpl();
-                OrderForm form = gson.fromJson(r.value(), OrderForm.class);
-                form.setOrder_id(r.key());
-                List<Item> sorted = form.getItems();
-                sorted.sort(Comparator.comparing(Item::getId));
-                List<DistributedLock> lockList = new ArrayList<>();
-                for (Item i : sorted){
-                    DistributedLock lock = new DistributedLock(zkDao.getZookeeper(),i.getId());
-                    lockList.add(lock);
-                }
-                OrderResponse response = new OrderResponse();
-              
-                try {
-                    for (DistributedLock lc : lockList) {
-                        lc.lock();
+                partition.forEachRemaining(r -> {
+                    LOG.info("Key:   " + r.key());
+                    LOG.info("Value: " + r.value());
+                    OrderForm form = gson.fromJson(r.value(), OrderForm.class);
+                    form.setOrder_id(r.key());
+                    List<Item> sorted = form.getItems();
+                    sorted.sort(Comparator.comparing(Item::getId));
+                    List<DistributedLock> lockList = new ArrayList<>();
+                    for (Item i : sorted) {
+                        DistributedLock lock = new DistributedLock(zkDao.getZookeeper(), i.getId());
+                        lockList.add(lock);
                     }
-                    System.out.println("before get response");
-                    response = mysqlDao.buyItem(form, zkDao.getZookeeper());
-                    System.out.println("after get response");
-                }catch (KeeperException | InterruptedException e){
-                    e.printStackTrace();
-                    return;
-                }finally {
-                    Collections.reverse(lockList);
-                    for (DistributedLock lc : lockList) {
-                        lc.unlock();
+                    OrderResponse response = new OrderResponse();
+
+                    try {
+                        for (DistributedLock lc : lockList) {
+                            lc.lock();
+                        }
+                        System.out.println("before get response");
+                        response = mysqlDao.buyItem(form, zkDao.getZookeeper());
+                        System.out.println("after get response");
+                    } catch (KeeperException | InterruptedException e) {
+                        e.printStackTrace();
+                        return;
+                    } finally {
+                        Collections.reverse(lockList);
+                        for (DistributedLock lc : lockList) {
+                            lc.unlock();
+                        }
+
                     }
 
-                }
+                    if (!response.isSuccess()) {
+                        mysqlDao.storeResult(form.getOrder_id(), form.getUser_id(), form.getInitiator(), false, 0);
+                        zkDao.close();
+                        return;
+                    }
 
-                if (!response.isSuccess()) {
-                    mysqlDao.storeResult(form.getOrder_id(), form.getUser_id(), form.getInitiator(), false, 0);
-                    zkDao.close();
-                    return;
-                }
-
-                if (form.getItems().size() != response.getCurrencies().size()) {
+                    if (form.getItems().size() != response.getCurrencies().size()) {
 //                    System.out.printf("currency: %d, actual: %d\n", response.getCurrencies().size(), form.getItems().size());
-                    LOG.error("currency: " + response.getCurrencies() + ", actual: " + form.getItems());
-                }
-                if (form.getItems().size() != response.getPrices().size()) {
-                    LOG.error("price: " + response.getPrices() + ", actual: " + form.getItems());
+                        LOG.error("currency: " + response.getCurrencies() + ", actual: " + form.getItems());
+                    }
+                    if (form.getItems().size() != response.getPrices().size()) {
+                        LOG.error("price: " + response.getPrices() + ", actual: " + form.getItems());
 //                    System.out.printf("price: %d, actual: %d\n", response.getPrices().size(), form.getItems().size());
-                }
+                    }
 
 
-                List<Double> exchangeRates = zkDao.getAllExchangeRate();
-                double paidInUnit = 0;
-                for (int i = 0; i < form.getItems().size(); i++) {
-                    paidInUnit += Integer.valueOf(form.getItems().get(i).getNumber())
-                            * response.getPrices().get(i)
-                            * exchangeRates.get(name2index.get(response.getCurrencies().get(i)));
-                }
+                    List<Double> exchangeRates = zkDao.getAllExchangeRate();
+                    double paidInUnit = 0;
+                    for (int i = 0; i < form.getItems().size(); i++) {
+                        paidInUnit += Integer.valueOf(form.getItems().get(i).getNumber())
+                                * response.getPrices().get(i)
+                                * exchangeRates.get(name2index.get(response.getCurrencies().get(i)));
+                    }
 
-                double paidInCNY = paidInUnit / exchangeRates.get(name2index.get("CNY"));
-                mysqlDao.storeResult(form.getOrder_id(), form.getUser_id(), form.getInitiator(), true,
-                        paidInUnit / exchangeRates.get(name2index.get(form.getInitiator())));
-                zkDao.increaseTotalTransactionBy(paidInCNY);
-                zkDao.close();
+                    double paidInCNY = paidInUnit / exchangeRates.get(name2index.get("CNY"));
+                    mysqlDao.storeResult(form.getOrder_id(), form.getUser_id(), form.getInitiator(), true,
+                            paidInUnit / exchangeRates.get(name2index.get(form.getInitiator())));
+                    zkDao.increaseTotalTransactionBy(paidInCNY);
+                    zkDao.close();
+
+                });
             });
         });
 
