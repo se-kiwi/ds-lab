@@ -51,6 +51,13 @@ public class MysqlDaoImpl implements MysqlDao {
                     }
                 }
             }
+
+            // fix bug: some commodity do not show in table
+            if (order.getItems().size() != prices.size()) {
+                connection.close();
+                return response;
+            }
+
             for (Item item : order.getItems()) {
                 PreparedStatement ps = connection.prepareStatement("UPDATE commodity SET inventory = inventory - ? where id = ?");
                 ps.setInt(1, Integer.valueOf(item.getNumber()));

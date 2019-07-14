@@ -61,11 +61,12 @@ public class MainProcess {
 
         stream.foreachRDD(record -> {
             record.foreach(r -> {
-//                LOG.info("Key:   " + r.key());
+                LOG.info("Key:   " + r.key());
                 LOG.info("Value: " + r.value());
                 MysqlDao mysqlDao = new MysqlDaoImpl();
                 ZkDao zkDao = new ZkDaoImpl();
                 OrderForm form = gson.fromJson(r.value(), OrderForm.class);
+                form.setOrder_id(r.key());
                 List<Item> sorted = form.getItems();
                 sorted.sort(Comparator.comparing(Item::getId));
                 List<DistributedLock> lockList = new ArrayList<>();
@@ -74,6 +75,7 @@ public class MainProcess {
                     lockList.add(lock);
                 }
                 OrderResponse response = new OrderResponse();
+              
                 try {
                     for (DistributedLock lc : lockList) {
                         lc.lock();
